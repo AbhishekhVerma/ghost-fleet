@@ -1,0 +1,702 @@
+/* ============================================================
+   Ghost Fleet — Dark Maritime Dashboard Theme
+   ============================================================ */
+
+:root {
+    /* Ocean dark palette */
+    --bg-deep:        #0a0e1a;
+    --bg-surface:     #111827;
+    --bg-card:        #1a2235;
+    --bg-card-hover:  #1f2a40;
+    --bg-overlay:     rgba(10, 14, 26, 0.85);
+
+    /* Accent colors */
+    --accent-cyan:    #22d3ee;
+    --accent-blue:    #3b82f6;
+    --accent-red:     #ef4444;
+    --accent-orange:  #f97316;
+    --accent-yellow:  #eab308;
+    --accent-green:   #22c55e;
+    --accent-purple:  #a78bfa;
+
+    /* Risk colors */
+    --risk-low:       #22c55e;
+    --risk-medium:    #eab308;
+    --risk-high:      #f97316;
+    --risk-critical:  #ef4444;
+
+    /* Cargo status colors */
+    --loaded:         #ef4444;
+    --ballast:        #3b82f6;
+    --unknown:        #6b7280;
+
+    /* Text */
+    --text-primary:   #f1f5f9;
+    --text-secondary: #94a3b8;
+    --text-muted:     #64748b;
+
+    /* Borders */
+    --border:         rgba(255, 255, 255, 0.06);
+    --border-light:   rgba(255, 255, 255, 0.1);
+
+    /* Spacing */
+    --top-bar-height: 56px;
+    --sidebar-width:  420px;
+
+    /* Typography */
+    --font-sans:      'Inter', -apple-system, system-ui, sans-serif;
+    --font-mono:      'JetBrains Mono', 'Fira Code', monospace;
+}
+
+*, *::before, *::after {
+    box-sizing: border-box;
+    margin: 0;
+    padding: 0;
+}
+
+html, body {
+    height: 100%;
+    overflow: hidden;
+    font-family: var(--font-sans);
+    background: var(--bg-deep);
+    color: var(--text-primary);
+    -webkit-font-smoothing: antialiased;
+}
+
+/* ============================================================
+   TOP BAR
+   ============================================================ */
+
+#top-bar {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    height: var(--top-bar-height);
+    background: var(--bg-surface);
+    border-bottom: 1px solid var(--border);
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 0 16px;
+    z-index: 1000;
+    backdrop-filter: blur(12px);
+}
+
+.top-bar-left {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+}
+
+.logo {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.logo-icon {
+    font-size: 24px;
+}
+
+.logo-text {
+    font-size: 16px;
+    font-weight: 800;
+    letter-spacing: 2px;
+    background: linear-gradient(135deg, var(--accent-cyan), var(--accent-blue));
+    -webkit-background-clip: text;
+    background-clip: text;
+    -webkit-text-fill-color: transparent;
+}
+
+.logo-badge {
+    font-size: 9px;
+    font-weight: 700;
+    letter-spacing: 1.5px;
+    padding: 2px 6px;
+    border-radius: 4px;
+    background: var(--accent-red);
+    color: white;
+    animation: pulse-badge 2s infinite;
+}
+
+@keyframes pulse-badge {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0.5; }
+}
+
+.top-bar-center {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+}
+
+.stat-pill {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 6px 14px;
+    background: var(--bg-card);
+    border: 1px solid var(--border);
+    border-radius: 20px;
+    font-size: 12px;
+}
+
+.stat-label {
+    color: var(--text-muted);
+    font-weight: 500;
+}
+
+.stat-value {
+    font-weight: 700;
+    font-family: var(--font-mono);
+    color: var(--text-primary);
+}
+
+.stat-danger .stat-value { color: var(--accent-red); }
+.stat-loaded .stat-value { color: var(--accent-orange); }
+.stat-money .stat-value { color: var(--accent-green); }
+
+.top-bar-right {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.toolbar-btn {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    padding: 6px 12px;
+    background: var(--bg-card);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    color: var(--text-secondary);
+    font-size: 12px;
+    font-family: var(--font-sans);
+    cursor: pointer;
+    transition: all 0.2s ease;
+}
+
+.toolbar-btn:hover {
+    background: var(--bg-card-hover);
+    border-color: var(--accent-cyan);
+    color: var(--accent-cyan);
+}
+
+.toolbar-btn.active {
+    background: rgba(34, 211, 238, 0.1);
+    border-color: var(--accent-cyan);
+    color: var(--accent-cyan);
+}
+
+/* ============================================================
+   MAIN CONTENT
+   ============================================================ */
+
+#main-content {
+    position: fixed;
+    top: var(--top-bar-height);
+    left: 0;
+    right: 0;
+    bottom: 0;
+    display: flex;
+}
+
+#map-container {
+    flex: 1;
+    position: relative;
+}
+
+#map {
+    width: 100%;
+    height: 100%;
+}
+
+/* Leaflet customization */
+.leaflet-container {
+    background: var(--bg-deep) !important;
+}
+
+/* ============================================================
+   RISK TIER OVERLAY (on map)
+   ============================================================ */
+
+#risk-tier-overlay {
+    position: absolute;
+    bottom: 24px;
+    left: 24px;
+    z-index: 800;
+    background: var(--bg-overlay);
+    border: 1px solid var(--border-light);
+    border-radius: 12px;
+    padding: 16px 24px;
+    backdrop-filter: blur(16px);
+    min-width: 260px;
+}
+
+.tier-label {
+    font-size: 10px;
+    font-weight: 600;
+    letter-spacing: 2px;
+    color: var(--text-muted);
+    margin-bottom: 8px;
+}
+
+.tier-value {
+    font-size: 28px;
+    font-weight: 900;
+    font-family: var(--font-mono);
+    margin-bottom: 4px;
+}
+
+.tier-value.tier-CRITICAL { color: var(--risk-critical); }
+.tier-value.tier-HIGH     { color: var(--risk-high); }
+.tier-value.tier-ELEVATED { color: var(--risk-medium); }
+.tier-value.tier-MODERATE { color: var(--risk-low); }
+
+.tier-flow {
+    font-size: 13px;
+    font-family: var(--font-mono);
+    color: var(--text-secondary);
+}
+
+/* ============================================================
+   SIDEBAR
+   ============================================================ */
+
+#sidebar {
+    width: var(--sidebar-width);
+    background: var(--bg-surface);
+    border-left: 1px solid var(--border);
+    overflow-y: auto;
+    transition: width 0.3s ease, transform 0.3s ease;
+    position: relative;
+}
+
+#sidebar.sidebar-collapsed {
+    width: var(--sidebar-width);
+}
+
+#sidebar-toggle {
+    position: absolute;
+    top: 12px;
+    left: -24px;
+    width: 24px;
+    height: 36px;
+    background: var(--bg-surface);
+    border: 1px solid var(--border);
+    border-right: none;
+    border-radius: 6px 0 0 6px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    color: var(--text-muted);
+    font-size: 14px;
+    z-index: 10;
+    transition: all 0.2s;
+}
+
+#sidebar-toggle:hover {
+    color: var(--accent-cyan);
+}
+
+.panel {
+    padding: 20px;
+}
+
+.panel h2 {
+    font-size: 16px;
+    font-weight: 700;
+    margin-bottom: 16px;
+    color: var(--text-primary);
+}
+
+.panel h3 {
+    font-size: 13px;
+    font-weight: 600;
+    margin: 16px 0 8px;
+    color: var(--text-secondary);
+}
+
+/* ============================================================
+   SIGNAL PANEL (Hedge Fund View)
+   ============================================================ */
+
+.signal-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 10px;
+}
+
+.signal-card {
+    background: var(--bg-card);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 14px;
+    transition: all 0.2s;
+}
+
+.signal-card:hover {
+    border-color: var(--accent-cyan);
+    background: var(--bg-card-hover);
+}
+
+.signal-card-wide {
+    grid-column: span 2;
+}
+
+.signal-card-label {
+    font-size: 11px;
+    font-weight: 500;
+    color: var(--text-muted);
+    margin-bottom: 6px;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+.signal-card-value {
+    font-size: 18px;
+    font-weight: 700;
+    font-family: var(--font-mono);
+    color: var(--text-primary);
+}
+
+.signal-card-big {
+    font-size: 22px;
+    background: linear-gradient(135deg, var(--accent-green), var(--accent-cyan));
+    -webkit-background-clip: text;
+    background-clip: text;
+    -webkit-text-fill-color: transparent;
+}
+
+.signal-interpretation {
+    margin-top: 16px;
+    padding: 14px;
+    background: var(--bg-card);
+    border-radius: 10px;
+    border: 1px solid var(--border);
+}
+
+.signal-interpretation ul {
+    list-style: none;
+    padding: 0;
+}
+
+.signal-interpretation li {
+    font-size: 12px;
+    color: var(--text-secondary);
+    padding: 4px 0;
+    line-height: 1.5;
+}
+
+.arrow-down  { color: var(--accent-red); }
+.arrow-up    { color: var(--accent-green); }
+.arrow-spike { color: var(--accent-orange); }
+.arrow-ratio { color: var(--accent-purple); }
+
+/* ============================================================
+   VESSEL DETAIL PANEL
+   ============================================================ */
+
+.back-btn {
+    background: none;
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    color: var(--text-secondary);
+    font-size: 12px;
+    font-family: var(--font-sans);
+    padding: 4px 10px;
+    cursor: pointer;
+    margin-bottom: 12px;
+    transition: all 0.2s;
+}
+
+.back-btn:hover {
+    border-color: var(--accent-cyan);
+    color: var(--accent-cyan);
+}
+
+.vessel-imo {
+    font-size: 12px;
+    font-family: var(--font-mono);
+    color: var(--text-muted);
+    margin-bottom: 16px;
+}
+
+.risk-badge-large {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    width: 120px;
+    height: 120px;
+    border-radius: 50%;
+    margin: 0 auto 20px;
+    border: 3px solid;
+    position: relative;
+}
+
+.risk-badge-large::after {
+    content: '';
+    position: absolute;
+    inset: -8px;
+    border-radius: 50%;
+    border: 1px solid;
+    opacity: 0.3;
+}
+
+.risk-score-big {
+    font-size: 36px;
+    font-weight: 900;
+    font-family: var(--font-mono);
+}
+
+.risk-label {
+    font-size: 9px;
+    font-weight: 700;
+    letter-spacing: 2px;
+    color: var(--text-muted);
+}
+
+.risk-badge-large.risk-critical { border-color: var(--risk-critical); color: var(--risk-critical); }
+.risk-badge-large.risk-critical::after { border-color: var(--risk-critical); }
+.risk-badge-large.risk-high     { border-color: var(--risk-high); color: var(--risk-high); }
+.risk-badge-large.risk-high::after     { border-color: var(--risk-high); }
+.risk-badge-large.risk-medium   { border-color: var(--risk-medium); color: var(--risk-medium); }
+.risk-badge-large.risk-medium::after   { border-color: var(--risk-medium); }
+.risk-badge-large.risk-low      { border-color: var(--risk-low); color: var(--risk-low); }
+.risk-badge-large.risk-low::after      { border-color: var(--risk-low); }
+
+.vessel-detail-grid {
+    background: var(--bg-card);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    overflow: hidden;
+}
+
+.detail-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 10px 14px;
+    border-bottom: 1px solid var(--border);
+}
+
+.detail-row:last-child { border-bottom: none; }
+
+.detail-label {
+    font-size: 12px;
+    color: var(--text-muted);
+}
+
+.detail-value {
+    font-size: 13px;
+    font-weight: 600;
+    font-family: var(--font-mono);
+    color: var(--text-primary);
+}
+
+.detail-value.status-LOADED  { color: var(--loaded); }
+.detail-value.status-BALLAST { color: var(--ballast); }
+.detail-value.status-UNKNOWN { color: var(--unknown); }
+
+/* ============================================================
+   RISK BREAKDOWN BAR
+   ============================================================ */
+
+.risk-breakdown {
+    margin-top: 16px;
+}
+
+.breakdown-bar {
+    display: flex;
+    height: 12px;
+    border-radius: 6px;
+    overflow: hidden;
+    background: var(--bg-card);
+    border: 1px solid var(--border);
+    margin-bottom: 8px;
+}
+
+.breakdown-segment {
+    height: 100%;
+    transition: width 0.5s ease;
+}
+
+.breakdown-segment.sanctions  { background: var(--accent-red); }
+.breakdown-segment.identity   { background: var(--accent-orange); }
+.breakdown-segment.encounters { background: var(--accent-purple); }
+
+.breakdown-legend {
+    display: flex;
+    gap: 12px;
+    flex-wrap: wrap;
+}
+
+.legend-item {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    font-size: 10px;
+    color: var(--text-muted);
+}
+
+.legend-dot {
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+}
+
+.sanctions-dot  { background: var(--accent-red); }
+.identity-dot   { background: var(--accent-orange); }
+.encounters-dot { background: var(--accent-purple); }
+
+/* ============================================================
+   VESSEL LIST
+   ============================================================ */
+
+#vessel-search {
+    width: 100%;
+    padding: 8px 12px;
+    background: var(--bg-card);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    color: var(--text-primary);
+    font-family: var(--font-sans);
+    font-size: 13px;
+    outline: none;
+    margin-bottom: 12px;
+    transition: border-color 0.2s;
+}
+
+#vessel-search:focus {
+    border-color: var(--accent-cyan);
+}
+
+#vessel-search::placeholder {
+    color: var(--text-muted);
+}
+
+#vessel-list {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    max-height: 300px;
+    overflow-y: auto;
+}
+
+.vessel-row {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 10px 12px;
+    background: var(--bg-card);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    cursor: pointer;
+    transition: all 0.2s;
+}
+
+.vessel-row:hover {
+    border-color: var(--accent-cyan);
+    background: var(--bg-card-hover);
+}
+
+.vessel-row-risk {
+    width: 36px;
+    height: 36px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 12px;
+    font-weight: 800;
+    font-family: var(--font-mono);
+    flex-shrink: 0;
+    border: 2px solid;
+}
+
+.vessel-row-info {
+    flex: 1;
+    min-width: 0;
+}
+
+.vessel-row-name {
+    font-size: 13px;
+    font-weight: 600;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.vessel-row-meta {
+    font-size: 11px;
+    color: var(--text-muted);
+    font-family: var(--font-mono);
+}
+
+.vessel-row-cargo {
+    font-size: 10px;
+    font-weight: 600;
+    padding: 2px 6px;
+    border-radius: 4px;
+    flex-shrink: 0;
+}
+
+.vessel-row-cargo.LOADED  { background: rgba(239, 68, 68, 0.15); color: var(--loaded); }
+.vessel-row-cargo.BALLAST { background: rgba(59, 130, 246, 0.15); color: var(--ballast); }
+.vessel-row-cargo.UNKNOWN { background: rgba(107, 114, 128, 0.15); color: var(--unknown); }
+
+/* ============================================================
+   CUSTOM MAP MARKERS
+   ============================================================ */
+
+.vessel-marker {
+    width: 14px;
+    height: 14px;
+    border-radius: 50%;
+    border: 2px solid white;
+    box-shadow: 0 0 8px rgba(0, 0, 0, 0.5), 0 0 20px var(--glow-color, rgba(255,255,255,0.2));
+    transition: transform 0.2s;
+}
+
+.vessel-marker:hover {
+    transform: scale(1.4);
+    z-index: 10000 !important;
+}
+
+.vessel-marker.risk-low      { background: var(--risk-low); --glow-color: rgba(34, 197, 94, 0.4); }
+.vessel-marker.risk-medium   { background: var(--risk-medium); --glow-color: rgba(234, 179, 8, 0.4); }
+.vessel-marker.risk-high     { background: var(--risk-high); --glow-color: rgba(249, 115, 22, 0.4); }
+.vessel-marker.risk-critical { background: var(--risk-critical); --glow-color: rgba(239, 68, 68, 0.5); animation: pulse-marker 1.5s infinite; }
+
+@keyframes pulse-marker {
+    0%, 100% { box-shadow: 0 0 8px rgba(0,0,0,0.5), 0 0 20px var(--glow-color); }
+    50% { box-shadow: 0 0 12px rgba(0,0,0,0.5), 0 0 35px var(--glow-color); }
+}
+
+/* SAR detection zones */
+.sar-zone {
+    fill: rgba(239, 68, 68, 0.12);
+    stroke: rgba(239, 68, 68, 0.5);
+    stroke-width: 1;
+    stroke-dasharray: 6, 4;
+}
+
+/* Scrollbar styling */
+::-webkit-scrollbar { width: 6px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb { background: var(--text-muted); border-radius: 3px; }
+::-webkit-scrollbar-thumb:hover { background: var(--text-secondary); }
+
+/* ============================================================
+   RESPONSIVE
+   ============================================================ */
+
+@media (max-width: 900px) {
+    .top-bar-center { display: none; }
+    #sidebar { width: 100%; position: absolute; right: 0; z-index: 900; }
+    #sidebar-toggle { display: flex; }
+}
