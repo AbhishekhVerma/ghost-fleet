@@ -189,7 +189,8 @@ nova-hackathon/
 │   ├── SESSION_LOG.md              # Session history
 │   ├── PLANNING.md                 # THIS FILE
 │   ├── IDEA_MAP.md                 # Concept deep-dive
-│   └── JUDGE_REVIEW.md            # Vulnerability assessment
+│   ├── JUDGE_REVIEW.md            # Vulnerability assessment
+│   └── DATASETS_AND_ML_RESEARCH.md # Open datasets, ML models, benchmarks & latency
 └── dashboard/                      # ✅ Live maritime tracker
     ├── index.html
     ├── style.css

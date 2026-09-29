@@ -5,7 +5,7 @@ Global Fishing Watch vessel identity and encounter data. It produces an
 explainable vessel risk score and estimates the value of oil flows associated
 with high-risk vessels.
 
-The current project version is **0.1.0**. The shared repository is
+The current project version is **0.1.1**. The shared repository is
 [`aaaditt/ghost-fleet`](https://github.com/aaaditt/ghost-fleet).
 
 ## What the pipeline does

@@ -26,3 +26,16 @@ operator-provided dataset and token.
 **Remaining:** An end-to-end run still needs a local Global Fishing Watch token
 and current OpenSanctions maritime export. See `docs/HANDOVER.md` for prioritized
 follow-up work.
+
+## 2026-09-29 — Open Datasets & Machine Learning Research (v0.1.1)
+
+**Objective:** Research open-source datasets, machine learning models, training requirements, empirical benchmarks, and inference latency/resource load for Ghost Fleet.
+
+**Decisions:** Document a 3-tier model framework (Tier 1: Tabular Cargo Classifier, Tier 2: Evasion GNN, Tier 3: SAR Space Radar YOLOv8). Select NOAA MarineCadastre and Danish Maritime Authority (DMA) AIS as primary open training corpora for the cargo classifier, and DIU/GFW xView3-SAR for satellite radar detection.
+
+**Changed:** Added `docs/DATASETS_AND_ML_RESEARCH.md`, updated `docs/PLANNING.md`, `README.md`, `VERSION`, and `CHANGELOG.md`.
+
+**Validation:** Verified dataset download portals, confirmed licensing status (public domain / open data), and documented quantitative latency and hardware resource footprints for CPU/GPU serving.
+
+**Remaining:** Implement a trained Scikit-Learn / LightGBM cargo classifier model weights file from a sample NOAA/DMA dataset slice for v0.2.0.
+
