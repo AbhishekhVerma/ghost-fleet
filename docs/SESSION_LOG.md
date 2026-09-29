@@ -39,3 +39,24 @@ follow-up work.
 
 **Remaining:** Implement a trained Scikit-Learn / LightGBM cargo classifier model weights file from a sample NOAA/DMA dataset slice for v0.2.0.
 
+## 2026-09-29 — Concept clarification and implementation pause (v0.1.2)
+
+**Objective:** Explain Ghost Fleet from first principles in one readable Markdown
+document and prevent exploratory prototypes from determining the product before
+the project owner provides direction.
+
+**Decisions:** Set the project status to concept definition. Treat existing code,
+dashboards, model descriptions, and performance claims as exploratory material.
+Require explicit product-owner direction before further prototype or feature
+development.
+
+**Changed:** Added `docs/CONCEPT_OVERVIEW.md`; updated `README.md`, `AGENTS.md`,
+`docs/HANDOVER.md`, `CHANGELOG.md`, and `VERSION`.
+
+**Validation:** Reviewed the concept, planning, judge-review, dataset research,
+handover, session, README, and changelog documents. Checked the new Markdown for
+structure, internal consistency, unsupported certainty, and formatting errors.
+
+**Remaining:** Review the concept overview with the project owner and capture the
+selected primary user, first decision, scope, evidence standard, freshness need,
+and immediate project objective in an approved product brief.

@@ -1,12 +1,21 @@
 # Ghost Fleet
 
-Ghost Fleet is a hackathon pipeline that combines maritime sanctions data with
-Global Fishing Watch vessel identity and encounter data. It produces an
-explainable vessel risk score and estimates the value of oil flows associated
-with high-risk vessels.
+Ghost Fleet is a proposed maritime intelligence platform for identifying ships
+that may be hiding sanctioned or suspicious activity, explaining the evidence,
+and estimating the operational and economic significance.
 
-The current project version is **0.1.1**. The shared repository is
+The current project version is **0.1.2**. The shared repository is
 [`aaaditt/ghost-fleet`](https://github.com/aaaditt/ghost-fleet).
+
+## Start here
+
+Read [Ghost Fleet: Concept Overview](docs/CONCEPT_OVERVIEW.md) for the complete
+plain-language explanation of the idea, problem, potential users, benefits,
+limitations, and product decisions that must be made before further development.
+
+The project is currently in **concept definition**. Existing technical artifacts
+are exploratory; they do not define the final product. Further prototype work is
+paused until the project owner selects the target user and product direction.
 
 ## What the pipeline does
 

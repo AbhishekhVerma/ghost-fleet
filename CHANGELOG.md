@@ -3,6 +3,21 @@
 All notable changes to Ghost Fleet are recorded here. Versions follow semantic
 versioning.
 
+## [0.1.2] - 2026-09-29
+
+### Added
+
+- A concept-first, plain-language guide covering the problem, terminology,
+  proposed product, evidence sources, users, benefits, limitations, success
+  criteria, and decisions required before implementation.
+- A repository guardrail pausing further prototype development until the project
+  owner selects the user, use case, and direction.
+
+### Changed
+
+- Reframed the README and handover around concept definition rather than the
+  exploratory prototype.
+
 ## [0.1.1] - 2026-09-29
 
 ### Added
