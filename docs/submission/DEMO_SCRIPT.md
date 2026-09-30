@@ -27,21 +27,21 @@ Use the same script for the live pitch demo and the recorded video.
 **Screen:** point the cursor at the headline, then run along the bars from
 March to August.
 
-> "Ghost Fleet answers that in one line. Across 120 of the most-sanctioned
-> shadow-fleet tankers, activity fell 15% over the last three months. That's
+> "Ghost Fleet answers that in one line. Across 300 of the most-sanctioned
+> shadow-fleet tankers, activity fell 10% over the last three months. That's
 > June to August against March to May, the dark bars against the grey ones.
 > Every number comes from public data: OpenSanctions for who is sanctioned,
 > Global Fishing Watch for what those ships actually did."
 
-**Caption:** *−15% active sanctioned tankers, Jun–Aug vs Mar–May*
+**Caption:** *−10% active sanctioned tankers, Jun–Aug vs Mar–May*
 
 ## 0:50–1:15 · Where it is moving
 
 **Screen:** scroll the panel to *Busiest ports of call*, then sweep the cursor
 across the map from the Baltic to the Black Sea, Suez and the Russian Far East.
 
-> "Where are they going? Nakhodka in the Pacific, Ust-Luga and Primorsk on the
-> Baltic, through Suez and Istanbul. Those are Russia's export routes, and
+> "Where are they going? Nakhodka in the Pacific, Primorsk and Ust-Luga on the
+> Baltic, through Suez and Port Said. Those are Russia's export routes, and
 > they came straight out of the data. We didn't draw them in."
 
 ## 1:15–2:10 · One ship's story (the key moment)
@@ -77,7 +77,7 @@ zooms to its activity. Slowly point down the numbered identity list.
 
 **Screen:** click **Back to overview**. The whole fleet reappears.
 
-> "Across these 120 ships we found 63 different flags, and six are
+> "Across these 300 ships we found 81 different flags, and eleven are
 > flagged to landlocked countries today. Next, we screen all 892 listed
 > vessels daily and add licensed draft data, to turn this activity signal
 > into barrels. Ghost Fleet: the hidden fleet, made visible."

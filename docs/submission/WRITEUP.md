@@ -23,13 +23,13 @@ one question: **is hidden, sanctions-linked oil supply rising or falling, and
 where is it moving?**
 
 - **The trend.** The panel leads with a plain sentence. In this snapshot,
-  sanctioned tanker activity fell 15% in the last three months (Jun–Aug vs
+  sanctioned tanker activity fell 10% in the last three months (Jun–Aug vs
   Mar–May), shown over 12 months of bars.
-- **The map.** 112 shadow-fleet tankers sit at their latest observed
+- **The map.** 276 shadow-fleet tankers sit at their latest observed
   positions, clustered at the Baltic terminals, the Black Sea, Suez, the
   Gulf, Singapore and the Russian Far East.
-- **Where they call.** The busiest ports are Nakhodka, Port Said, Suez,
-  Ust-Luga, Primorsk and Istanbul: the export routes you would expect.
+- **Where they call.** The busiest ports are Nakhodka, Suez, Port Said,
+  Primorsk and Ust-Luga: the export routes you would expect.
 - **The dossier.** Selecting a vessel shows the evidence behind its score:
   every identity it has used, in order, and its recent dated activity on the
   map. For example, EAST 1 has sailed as TORM GERTRUD (Denmark), EAST 1 (Hong
@@ -44,12 +44,12 @@ where is it moving?**
 
 | | |
 |---|---|
-| Shadow-fleet vessels screened | 120 (most-listed first; all 120 matched to tracking data) |
-| Switched identity at least once | 115; median 4 switches, 47 switched 5+ times |
-| Different flags used across all identities | 63 |
-| Currently flagged to a landlocked country | 6 (Mali ×3, Zimbabwe ×2, Malawi ×1) |
-| Now flagged to Russia | 49 |
-| 3-month activity trend | −15% |
+| Shadow-fleet vessels screened | 300 (most-listed first; all 300 matched to tracking data) |
+| Switched identity at least once | 289; median 4 switches, 124 switched 5+ times |
+| Different flags used across all identities | 81 |
+| Currently flagged to a landlocked country | 11 (Malawi ×4, Mali ×3, Zimbabwe ×3, Botswana ×1) |
+| Now flagged to Russia | 115 |
+| 3-month activity trend | −10% |
 
 ## How we built it
 
@@ -87,7 +87,7 @@ tests cover the pipeline.
   history) and state the gaps on screen.
 - **Keeping the headline honest.** Browser testing caught an aggregation bug:
   trimming events for page size before computing the trend undercounted early
-  months. We fixed it, re-derived the figure (−15.3%), and checked it by hand.
+  months. We fixed it, re-derived the figure, and checked it by hand.
 
 ## Accomplishments we're proud of
 
@@ -108,11 +108,16 @@ it is trying to hide.
 - The trend counts active listed vessels, not barrels moved.
 - Value figures are an upper bound: hull capacity × estimated voyages × a
   static Brent price of $78.50. They are not observed cargo.
-- The data covers 120 of 892 listed vessels, from a one-year snapshot rather
+- The data covers 300 of 892 listed vessels, from a one-year snapshot rather
   than a live feed.
 - OpenSanctions (CC BY-NC 4.0) and Global Fishing Watch are licensed for
   non-commercial use. A commercial product would need licensed AIS and
   sanctions data.
+
+## Licence
+
+Code: MIT. Data: under its sources' terms (OpenSanctions CC BY-NC 4.0,
+Global Fishing Watch non-commercial).
 
 ## What's next
 

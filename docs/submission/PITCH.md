@@ -12,10 +12,10 @@ follows `DEMO_SCRIPT.md` and replaces slides 5–6 when presenting in person.
 | 1 | Ghost Fleet | Hidden oil supply, seen from the sea. |
 | 2 | A ship can turn off its beacon | Rename, re-flag, swap radio IDs: how the shadow fleet hides. |
 | 3 | The trader's question | Is hidden supply rising or falling, and where? |
-| 4 | −15% | Active sanctioned tankers, Jun–Aug vs Mar–May (232 vs 274). |
+| 4 | −10% | Active sanctioned tankers, Jun–Aug vs Mar–May (595 vs 662). |
 | 5 | One screen | The live product: trend, map, busiest ports, dossiers. |
 | 6 | One hull, seven identities | EAST 1 → WOLF; Malawi is landlocked; score 40 + 30 + 5. |
-| 7 | It isn't one ship | 115 of 120 switched identity; 63 flags; 6 landlocked; 49 now Russian. |
+| 7 | It isn't one ship | 289 of 300 switched identity; 81 flags; 11 landlocked; 115 now Russian. |
 | 8 | How it works | OpenSanctions → Global Fishing Watch → dated snapshot. |
 | 9 | What we don't claim | Not proof, no loaded state, capacity upper bound, not live. |
 | 10 | What's next | All 892 ships daily; draft data to barrels; satellite radar. |
