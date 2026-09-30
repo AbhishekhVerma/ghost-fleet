@@ -1,48 +1,68 @@
 # Project Handover
 
 - Updated: 2026-09-30
-- Version: 0.1.2 (0.2.0 in progress)
+- Version: 0.2.0
 - Shared branch: `main`
 
 ## Current state
 
-The project owner approved `docs/PRODUCT_BRIEF.md`. Ghost Fleet is now a
-**map-first "Hidden Supply Monitor" for commodity and energy traders**, built
-for a hackathon submission due 2026-09-30. The concept-definition pause is
-lifted, but only for work inside the brief.
+Ghost Fleet is a **map-first "hidden supply monitor" for commodity and energy
+traders** (see `docs/PRODUCT_BRIEF.md`). It is built for a hackathon
+submission due 2026-09-30.
 
-The work follows the plan phases:
+- **Live:** https://ghost-fleet.vercel.app. The demo vessel is
+  `#imo=9240885` (EAST 1 → WOLF, 7 identities).
+- **Data:** a real snapshot of 120 of the most-listed shadow-fleet vessels,
+  30 Sep 2025 – 27 Sep 2026. Headline: active vessels −15.3% (Jun–Aug vs
+  Mar–May).
+- **Pipeline:** `dark_fleet_pipeline.py` (OpenSanctions + Global Fishing
+  Watch v3) with 9 offline tests.
+- **Submission materials:** `docs/submission/` (write-up, demo script,
+  pitch outline). The slide deck is a private claude.ai artifact linked in
+  `PITCH.md`.
 
-| Phase | Scope | Status |
-|---|---|---|
-| 0 | Record decisions, lift guardrail, mark old docs historical | Done |
-| 1 | Real data: GFW + OpenSanctions pipeline, positions, monthly trend | Done (120 vessels, snapshot 2026-09-30) |
-| 2 | Trader-focused dashboard polish | Done |
-| 3 | Deploy live link | Done: https://ghost-fleet.vercel.app |
-| 4 | Write-up, demo script, pitch deck, video shot list | Not started |
-| 5 | Version 0.2.0, changelog, log, handover | Not started |
-
-`dashboard/data/vessels.json` and `signal.json` hold a **real** snapshot
-(120 shadow-fleet vessels). The redesigned dashboard reads it: a nautical-chart
-map, the trader headline, a monthly trend, and per-vessel dossiers. The hero
-demo vessel is `#imo=9240885` (EAST 1 → WOLF, 7 identities).
+| Deliverable | Status |
+|---|---|
+| Live link | Done |
+| Repository (public) | Done |
+| Write-up | Done: `docs/submission/WRITEUP.md` |
+| Demo script | Done: `docs/submission/DEMO_SCRIPT.md` |
+| Pitch deck | Done. The owner must add team names and share it |
+| Demo video | **Owner to record**, following the script |
 
 ## Immediate next work
 
-1. Phase 4: write-up, demo script, pitch deck, video shot list.
+1. Owner: fill in `[Team names]` on the deck cover, share or export the deck,
+   record the demo video, and submit.
+2. Optional before judging: widen the snapshot beyond 120 vessels
+   (`--max 300`) if time allows. The response cache makes reruns cheap, but
+   new vessels cost roughly 5 API calls each.
+3. After the hackathon: validate the trend against published export
+   estimates, and add licensed draft data.
 
 ## Setup
 
-See `README.md`. You need Python 3.10+, `GFW_API_TOKEN` in the environment, and
-`maritime.csv` in the repo root. Both are git-ignored.
+- Python 3.10+, `python -m pip install -r requirements.txt`.
+- `GFW_API_TOKEN` in the environment. The owner's is set as a Windows user
+  variable.
+- `maritime.csv` in the repo root, from the OpenSanctions maritime dataset.
+- Rebuild offline from the cache with
+  `python dark_fleet_pipeline.py --offline --start 2025-09-30 --end 2026-09-27`.
+- Deploy with `vercel deploy --prod --cwd dashboard`. The project is linked in
+  `dashboard/.vercel` (git-ignored).
 
 ## Known risks
 
-- GFW token approval delays or rate limits. The fallback is the labelled
-  fictional demo data.
-- OpenSanctions and GFW terms are non-commercial. Credit both.
-- GFW identity data rarely includes draft, so many cargo states will honestly be
-  UNKNOWN.
-- Value figures depend on assumed capacity and a static Brent price. Always
-  show them as ranges.
-- Encounters, identity changes, and risk scores do not prove wrongdoing.
+- Global Fishing Watch has almost no tanker encounter or AIS-gap events, and
+  no draft data. The evidence rests on identity history, loitering and port
+  calls, and cargo state is always unknown.
+- The trend counts active listed vessels, not barrels. Value figures are a
+  capacity upper bound.
+- The data covers 120 of 892 listed vessels. The ranking prefers the
+  most-listed ships.
+- OpenSanctions and Global Fishing Watch are non-commercial licences, and
+  both are credited on the page.
+- A listing or score is not proof of wrongdoing. Keep that wording in any
+  pitch.
+- `dashboard/.env.local` holds a Vercel OIDC token. It is git-ignored and
+  excluded from deploys by `.vercelignore`.

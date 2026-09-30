@@ -1,0 +1,124 @@
+# Ghost Fleet — hidden oil supply, seen from the sea
+
+**Live demo:** https://ghost-fleet.vercel.app
+**Repository:** https://github.com/aaaditt/ghost-fleet
+**Start here:** https://ghost-fleet.vercel.app/#imo=9240885
+
+> A ship can turn off its beacon, but it cannot stop leaving a trail.
+
+## Inspiration
+
+Since 2022, a "shadow fleet" of ageing tankers has kept sanctioned Russian oil
+moving. These ships change names, re-flag to registries that barely exist, and
+switch their radio identity. Some are now flagged to landlocked countries.
+The oil still reaches the market, and oil traders need to know whether that
+hidden supply is growing or shrinking. The data to answer that is public, but
+it is scattered across sanctions lists and vessel-tracking records that do not
+talk to each other.
+
+## What it does
+
+Ghost Fleet is a map-first monitor for commodity and energy traders. It answers
+one question: **is hidden, sanctions-linked oil supply rising or falling, and
+where is it moving?**
+
+- **The trend.** The panel leads with a plain sentence. In this snapshot,
+  sanctioned tanker activity fell 15% in the last three months (Jun–Aug vs
+  Mar–May), shown over 12 months of bars.
+- **The map.** 112 shadow-fleet tankers sit at their latest observed
+  positions, clustered at the Baltic terminals, the Black Sea, Suez, the
+  Gulf, Singapore and the Russian Far East.
+- **Where they call.** The busiest ports are Nakhodka, Port Said, Suez,
+  Ust-Luga, Primorsk and Istanbul: the export routes you would expect.
+- **The dossier.** Selecting a vessel shows the evidence behind its score:
+  every identity it has used, in order, and its recent dated activity on the
+  map. For example, EAST 1 has sailed as TORM GERTRUD (Denmark), EAST 1 (Hong
+  Kong), LONGEVITY 7 (Palau), and WOLF under Malawi and then Aruba flags. It
+  has also spent up to two weeks at a time idling at sea.
+- **Honest numbers.** The risk score is additive and visible (listing +
+  identity switches + loitering + AIS gaps). Size and value are shown as
+  ranges with their assumptions. Where the data cannot tell whether a tanker
+  is loaded, the dossier says "unknown" instead of guessing.
+
+### What the snapshot shows
+
+| | |
+|---|---|
+| Shadow-fleet vessels screened | 120 (most-listed first; all 120 matched to tracking data) |
+| Switched identity at least once | 115; median 4 switches, 47 switched 5+ times |
+| Different flags used across all identities | 63 |
+| Currently flagged to a landlocked country | 6 (Mali ×3, Zimbabwe ×2, Malawi ×1) |
+| Now flagged to Russia | 49 |
+| 3-month activity trend | −15% |
+
+## How we built it
+
+1. **Who is in the fleet.** We used the OpenSanctions maritime dataset (23,453
+   records) and its shadow-fleet tag. The export has one row per source list,
+   so we merge rows by IMO number. That gives 892 shadow-fleet vessels, 772
+   of them formally sanctioned. We rank by how many lists name each ship.
+2. **What they did.** For each IMO we query the Global Fishing Watch v3 API.
+   We collect *every* AIS identity carrying that IMO, then pull a year of
+   dated, positioned events for all of them: loitering at sea, port visits,
+   AIS gaps and encounters.
+3. **Scoring and estimates.** The pipeline computes a transparent score, size
+   ranges from gross tonnage, and a monthly activity series. It writes a dated
+   JSON snapshot.
+4. **The dashboard.** A static page (Leaflet on an Esri bathymetric basemap)
+   reads the snapshot. It is styled after a nautical chart: magenta overprint
+   for hazards, italic serif for vessel names. It is deployed on Vercel.
+
+The code is Python (pandas, requests) with plain HTML, CSS and JavaScript. It
+has no build step, no backend and no API keys in the browser. Nine offline
+tests cover the pipeline.
+
+## Challenges we ran into
+
+- **Tracking data splits one ship into many.** Global Fishing Watch often
+  stores each re-flag or radio-ID change as a separate record. Our first
+  version only read the first record, which hid the very behaviour we were
+  looking for. Merging every record that shares the IMO turned EAST 1 from
+  "one identity" into seven.
+- **Public data has blind spots.** The free tracking data has no draft
+  readings, so we cannot see whether a tanker is loaded. It also has almost no
+  tanker-to-tanker encounter or AIS-gap events. We verified with direct API
+  calls that these are coverage gaps, not errors. We rebuilt the evidence
+  around what is observable (loitering at sea, port calls and identity
+  history) and state the gaps on screen.
+- **Keeping the headline honest.** Browser testing caught an aggregation bug:
+  trimming events for page size before computing the trend undercounted early
+  months. We fixed it, re-derived the figure (−15.3%), and checked it by hand.
+
+## Accomplishments we're proud of
+
+- Every number on the screen traces to a public source and a dated snapshot.
+- The per-vessel dossier makes a flag-hopping pattern obvious in seconds.
+- We say "unknown" where the data is silent.
+
+## What we learned
+
+The evasion signal is in identity history, not position: names, flags and
+radio IDs. Positions tell you where a ship is. Identity history tells you what
+it is trying to hide.
+
+## Limitations
+
+- A sanctions listing, a score or an idle period at sea is **not proof of
+  wrongdoing**. This is a prioritisation and market-context tool, not advice.
+- The trend counts active listed vessels, not barrels moved.
+- Value figures are an upper bound: hull capacity × estimated voyages × a
+  static Brent price of $78.50. They are not observed cargo.
+- The data covers 120 of 892 listed vessels, from a one-year snapshot rather
+  than a live feed.
+- OpenSanctions (CC BY-NC 4.0) and Global Fishing Watch are licensed for
+  non-commercial use. A commercial product would need licensed AIS and
+  sanctions data.
+
+## What's next
+
+1. Screen all 892 vessels and refresh the snapshot daily.
+2. Add draft data from a licensed AIS provider to estimate loaded vs. ballast
+   state and turn activity into a barrels-based signal.
+3. Match satellite radar detections to find tankers that are physically
+   present with no AIS signal.
+4. Validate the trend against published export estimates with trader users.

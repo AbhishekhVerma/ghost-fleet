@@ -4,13 +4,19 @@ Ghost Fleet is a proposed maritime intelligence platform for identifying ships
 that may be hiding sanctioned or suspicious activity, explaining the evidence,
 and estimating the operational and economic significance.
 
-The current project version is **0.1.2**. The shared repository is
+The current project version is **0.2.0**. The shared repository is
 [`aaaditt/ghost-fleet`](https://github.com/aaaditt/ghost-fleet).
 
 **Live demo: https://ghost-fleet.vercel.app** · start with the vessel
 [EAST 1 / WOLF](https://ghost-fleet.vercel.app/#imo=9240885)
 
 ![Ghost Fleet overview: map of 112 shadow-fleet tankers with the monthly activity trend](docs/screenshot-overview.png)
+
+## Submission
+
+- [Write-up](docs/submission/WRITEUP.md)
+- [Demo script and video shot list](docs/submission/DEMO_SCRIPT.md)
+- [Pitch deck outline](docs/submission/PITCH.md)
 
 ## Start here
 

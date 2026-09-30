@@ -154,3 +154,19 @@ redirect to Vercel login (deployment protection); the production alias is
 public. Playwright on the live site: the deep link `#imo=9240885` renders all
 7 identities, 138 markers and loaded tiles, with 0 console errors. Screenshots
 are saved to `docs/screenshot-*.png`.
+
+**Phase 4 (submission materials, done):** Added `docs/submission/WRITEUP.md`,
+`DEMO_SCRIPT.md` (a timed 3-minute script with a video shot list, captions,
+fallbacks and judge Q&A) and `PITCH.md`. Built a 10-slide deck as a claude.ai
+Slides artifact (https://claude.ai/artifact/9SscVdcfFiNjFdTEaZLmeL, private
+until the owner shares it) using the dashboard's visual identity and the real
+screenshots. Every figure was recomputed from the snapshot: 115/120 switched
+identity, median 4 switches, 63 flags, 6 landlocked flags, 49 Russian-flagged.
+Checked the script's claims against the data. Corrected one caption from
+6 flags to 7.
+
+**Phase 5 (close-out):** Version 0.2.0. Updated `CHANGELOG.md` and the README
+(submission links, version). Rewrote `docs/HANDOVER.md`.
+
+**Remaining:** The owner records the demo video, fills in team names on the
+deck, shares or exports the deck, and submits.

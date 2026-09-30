@@ -3,6 +3,38 @@
 All notable changes to Ghost Fleet are recorded here. Versions follow semantic
 versioning.
 
+## [0.2.0] - 2026-09-30
+
+### Added
+
+- A product brief: a map-first "hidden supply monitor" for commodity and energy
+  traders.
+- A pipeline over real data. It reads the OpenSanctions shadow-fleet list
+  (merged by IMO) and every Global Fishing Watch identity per vessel. It
+  records dated loitering, port-call, AIS-gap and encounter events, a
+  transparent risk score, capacity and value ranges, a monthly activity trend
+  and the busiest ports. It adds a response cache, CLI flags
+  (`--max/--start/--end/--offline`) and 9 offline tests.
+- A committed real snapshot: 120 vessels, 30 Sep 2025 – 27 Sep 2026.
+- A redesigned dashboard: a nautical-chart map, the trend headline, key
+  figures and a searchable list, plus per-vessel dossiers with identity
+  history and dated activity. It supports `#imo=` deep links.
+- A live deployment at https://ghost-fleet.vercel.app.
+- Submission materials in `docs/submission/`: write-up, demo script, pitch
+  deck outline.
+
+### Changed
+
+- Cargo state is `UNKNOWN` with 0% confidence when no draft is available.
+  Previously it reported 50% with no evidence.
+- Identity changes count chronological AIS identity switches.
+- Older planning documents are marked historical.
+
+### Removed
+
+- Random vessel positions in the dashboard. Fictional demo data moved to
+  `dashboard/data/vessels.demo.json` and is not deployed.
+
 ## [0.1.2] - 2026-09-29
 
 ### Added
