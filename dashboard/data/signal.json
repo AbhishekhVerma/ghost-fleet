@@ -1,0 +1,128 @@
+{
+  "signal_date": "2026-09-30",
+  "window": {
+    "start": "2025-09-30",
+    "end": "2026-09-27"
+  },
+  "brent_crude_usd": 78.5,
+  "vessels_screened": 120,
+  "vessels_matched": 120,
+  "vessels_located": 112,
+  "high_risk_vessels": 92,
+  "vessels_loaded": 0,
+  "vessels_ballast": 0,
+  "vessels_unknown": 92,
+  "est_single_cargo_barrels": {
+    "low": 61658425,
+    "high": 75450648
+  },
+  "est_annual_flow_usd": {
+    "low": 22592916332,
+    "high": 52352425105
+  },
+  "activity_trend_3m_pct": -13.1,
+  "monthly": [
+    {
+      "month": "2025-10",
+      "active_vessels": 63,
+      "ais_gaps": 4,
+      "loitering": 145,
+      "port_visits": 91,
+      "encounters": 0
+    },
+    {
+      "month": "2025-11",
+      "active_vessels": 63,
+      "ais_gaps": 0,
+      "loitering": 141,
+      "port_visits": 94,
+      "encounters": 0
+    },
+    {
+      "month": "2025-12",
+      "active_vessels": 75,
+      "ais_gaps": 1,
+      "loitering": 164,
+      "port_visits": 124,
+      "encounters": 0
+    },
+    {
+      "month": "2026-01",
+      "active_vessels": 72,
+      "ais_gaps": 1,
+      "loitering": 259,
+      "port_visits": 97,
+      "encounters": 0
+    },
+    {
+      "month": "2026-02",
+      "active_vessels": 74,
+      "ais_gaps": 0,
+      "loitering": 207,
+      "port_visits": 108,
+      "encounters": 0
+    },
+    {
+      "month": "2026-03",
+      "active_vessels": 91,
+      "ais_gaps": 2,
+      "loitering": 297,
+      "port_visits": 137,
+      "encounters": 0
+    },
+    {
+      "month": "2026-04",
+      "active_vessels": 86,
+      "ais_gaps": 0,
+      "loitering": 389,
+      "port_visits": 100,
+      "encounters": 0
+    },
+    {
+      "month": "2026-05",
+      "active_vessels": 90,
+      "ais_gaps": 0,
+      "loitering": 368,
+      "port_visits": 103,
+      "encounters": 0
+    },
+    {
+      "month": "2026-06",
+      "active_vessels": 70,
+      "ais_gaps": 0,
+      "loitering": 221,
+      "port_visits": 119,
+      "encounters": 0
+    },
+    {
+      "month": "2026-07",
+      "active_vessels": 80,
+      "ais_gaps": 0,
+      "loitering": 262,
+      "port_visits": 138,
+      "encounters": 0
+    },
+    {
+      "month": "2026-08",
+      "active_vessels": 82,
+      "ais_gaps": 0,
+      "loitering": 223,
+      "port_visits": 110,
+      "encounters": 0
+    },
+    {
+      "month": "2026-09",
+      "active_vessels": 66,
+      "ais_gaps": 0,
+      "loitering": 191,
+      "port_visits": 90,
+      "encounters": 0
+    }
+  ],
+  "provenance": {
+    "sanctions": "OpenSanctions maritime dataset (CC BY-NC 4.0)",
+    "behaviour": "Global Fishing Watch API v3 (non-commercial)",
+    "price": "Static Brent reference $78.5/bbl",
+    "note": "Directional estimates only. Not proof of wrongdoing or trading advice."
+  }
+}

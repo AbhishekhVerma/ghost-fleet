@@ -142,16 +142,25 @@ def load_sanctioned_vessels(csv_path: str, max_rows: int = MAX_VESSELS) -> pd.Da
 # Step 2: Resolve each IMO to a GFW vessel and its identity history
 # ---------------------------------------------------------------------------
 def gfw_search_vessel(imo: str, offline: bool = False) -> dict | None:
+    """Merge every GFW identity that carries this IMO into one record.
+
+    GFW often splits a ship's history across several search entries (one per
+    re-flag or MMSI change), so taking only the first entry loses the evasion
+    pattern we are looking for. Identities without this IMO are dropped: they
+    may be a different ship reusing the same MMSI."""
     body = gfw_get("vessels/search", {
         "query": imo,
         "datasets[0]": "public-global-vessel-identity:latest",
     }, offline)
-    entries = (body or {}).get("entries", [])
-    for entry in entries:  # prefer the entry that actually carries this IMO
-        infos = entry.get("selfReportedInfo", []) + entry.get("registryInfo", [])
-        if any(str(i.get("imo") or "") == imo for i in infos):
-            return entry
-    return entries[0] if entries else None
+    merged = {"selfReportedInfo": [], "registryInfo": []}
+    for entry in (body or {}).get("entries", []):
+        for key in merged:
+            merged[key].extend(i for i in entry.get(key, []) if str(i.get("imo") or "") == imo)
+    return merged if merged["selfReportedInfo"] or merged["registryInfo"] else None
+
+
+def normalise_name(name: str | None) -> str | None:
+    return "".join(ch for ch in name.upper() if ch.isalnum()) if name else None
 
 
 def identity_history(vessel_record: dict) -> list[dict]:
@@ -171,12 +180,15 @@ def identity_history(vessel_record: dict) -> list[dict]:
 
 
 def count_identity_changes(vessel_record: dict) -> int:
-    """Name / flag / MMSI hopping is a documented shadow-fleet evasion pattern."""
-    history = identity_history(vessel_record)
-    names = {h["name"] for h in history if h["name"]}
-    flags = {h["flag"] for h in history if h["flag"]}
-    mmsis = {h["mmsi"] for h in history if h["mmsi"]}
-    return max(len(names) - 1, 0) + max(len(flags) - 1, 0) + max(len(mmsis) - 1, 0)
+    """Number of times the vessel switched AIS identity (name, flag or MMSI),
+    in time order. One re-flag counts once even if the MMSI changed with it.
+    Name / flag hopping is a documented shadow-fleet evasion pattern."""
+    ais = [h for h in identity_history(vessel_record) if h["source"] == "AIS"]
+    changes = 0
+    for prev, cur in zip(ais, ais[1:]):
+        if (normalise_name(prev["name"]), prev["flag"], prev["mmsi"]) !=            (normalise_name(cur["name"]), cur["flag"], cur["mmsi"]):
+            changes += 1
+    return changes
 
 
 def gfw_vessel_ids(vessel_record: dict) -> list[str]:
@@ -258,7 +270,9 @@ def compute_risk_score(sanctioned: bool, identity_changes: int,
         "sanctions": 40 if sanctioned else 30,
         "identity": min(identity_changes * 10, 30),
         "ais_gaps": min(dark_gaps * 5, 15),
-        "meetings": min((loitering + encounters) * 3, 15),
+        # Offshore loitering is common for these tankers (median ~20 events/yr
+        # in the 2026-09 snapshot), so 1 point per 4 events; full marks at 60+.
+        "meetings": min(loitering // 4 + encounters * 3, 15),
     }
     return min(sum(breakdown.values()), 100), breakdown
 
@@ -375,7 +389,10 @@ def monthly_series(vessels: list[dict], start: str, end: str) -> list[dict]:
             counts[month][e["kind"]] += 1
             active[month].add(v["imo"])
 
-    months, cur = [], datetime.date.fromisoformat(start).replace(day=1)
+    first = datetime.date.fromisoformat(start)
+    if first.day > 1:  # skip a partial first month; it would understate activity
+        first = (first.replace(day=28) + datetime.timedelta(days=4)).replace(day=1)
+    months, cur = [], first
     last = datetime.date.fromisoformat(end)
     while cur <= last:
         months.append(cur.strftime("%Y-%m"))

@@ -97,3 +97,25 @@ against the real GFW v3 schema, verified against the official
   (7 offline tests). The fictional data is saved as `vessels.demo.json`.
 - Validation: `python -m pytest -q` passed 7/7, and the loader ran on the real
   CSV. There has been no live GFW call yet because the token is still pending.
+
+**Phase 1b (real data run, done):** The owner set the GFW token. It was
+validated with one call (HTTP 200). A 3-vessel smoke test exposed two
+pipeline bugs, both fixed and covered by tests:
+- GFW splits one ship's history across several search entries. Only the
+  first entry was used, which dropped most identities and events. All entries
+  carrying the IMO are now merged (for example, EAST 1 → 7 identities: TORM
+  GERTRUD/DNK…EAST 1/HKG → LONGEVITY 7/PLW → WOLF/MWI → WOLF/ABW).
+- Identity changes double-counted (flag + MMSI per re-flag, and spacing
+  variants of a name). They now count chronological AIS identity switches with
+  normalised names.
+- Verified: GFW gap and encounter endpoints return HTTP 200 with total=0 for
+  these tankers over 2023–2026. That is a coverage limit, not an error, so
+  evidence rests on loitering, port visits, and identity history.
+- Rescaled "meetings" (loitering) points to 1 per 4 events. The old scale
+  saturated for nearly every vessel. The partial first month is now dropped
+  from the trend.
+- Snapshot (window 2025-09-30 → 2026-09-27, 120 most-listed shadow-fleet
+  vessels): 120/120 matched, 112 located, 92 scored ≥70, 0 API errors.
+  3-month active-vessel trend: −13.1% (Jun–Aug vs Mar–May, hand-checked).
+- Validation: `python -m pytest -q` passed 8/8. Full live run, then an offline
+  rebuild from cache.

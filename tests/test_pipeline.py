@@ -43,8 +43,8 @@ def fake_gfw_get(path, params, offline=False):
 
 
 def test_identity_changes_counts_names_flags_and_mmsi():
-    # names {OLD, NEW}, flags {RUS, GAB}, mmsi {273.., 626..} -> 1 + 1 + 1
-    assert p.count_identity_changes(VESSEL) == 3
+    # one switch: OLD NAME/RUS/273.. -> NEW NAME/GAB/626..
+    assert p.count_identity_changes(VESSEL) == 1
 
 
 def test_risk_score_is_capped_and_explained():
@@ -72,8 +72,8 @@ def test_monthly_series_covers_window_and_counts_active_vessels():
                                        {"kind": "port_visit", "start": "2026-05-20T00:00"}]},
                {"imo": "2", "events": [{"kind": "gap", "start": "2026-05-09T00:00"}]}]
     series = p.monthly_series(vessels, "2026-03-15", "2026-07-01")
-    assert [m["month"] for m in series] == ["2026-03", "2026-04", "2026-05", "2026-06", "2026-07"]
-    may = series[2]
+    assert [m["month"] for m in series] == ["2026-04", "2026-05", "2026-06", "2026-07"]  # partial March skipped
+    may = series[1]
     assert may["active_vessels"] == 2 and may["ais_gaps"] == 2 and may["port_visits"] == 1
 
 
@@ -86,12 +86,12 @@ def test_analyse_vessel_end_to_end(monkeypatch):
     assert v["gfw_match"] and v["current_name"] == "NEW NAME"
     assert (v["_lat"], v["_lng"], v["last_seen"][:10]) == (44.7, 37.8, "2026-08-20")  # latest event wins
     assert v["ais_gaps"] == 1 and v["loitering_events"] == 1 and v["port_visits"] == 1
-    assert v["risk_score"] == 40 + 30 + 5 + 3
+    assert v["risk_score"] == 40 + 10 + 5 + 0  # 1 loitering event < 4
     assert v["cargo_status"] == "UNKNOWN" and v["cargo_confidence"] == 0.0
     assert v["est_annual_flow_usd"]["low"] < v["est_annual_flow_usd"]["high"]
 
     signal = p.generate_market_signal([v], "2025-10-01", "2026-09-27")
-    assert signal["high_risk_vessels"] == 1 and len(signal["monthly"]) == 12
+    assert signal["high_risk_vessels"] == 0 and len(signal["monthly"]) == 12  # 55 < 70; Oct-2025..Sep-2026
 
 
 def test_loader_keeps_shadow_fleet_and_strips_imo_prefix(tmp_path):
@@ -107,3 +107,16 @@ def test_loader_keeps_shadow_fleet_and_strips_imo_prefix(tmp_path):
     assert out["imo"].tolist() == ["9000001", "8000003"]  # merged, sanctioned first
     first = out.iloc[0]
     assert first["_sanctioned"] and first["datasets"] == "ofac;ua" and first["id"] == "a1"
+
+
+def test_search_merges_split_entries_and_drops_foreign_identities(monkeypatch):
+    body = {"entries": [
+        {"selfReportedInfo": [{"id": "a", "imo": "9240885", "shipname": "WOLF", "flag": "ABW", "ssvid": "1"}]},
+        {"selfReportedInfo": [{"id": "b", "imo": "9240885", "shipname": "EAST 1", "flag": "HKG", "ssvid": "2"},
+                              {"id": "c", "imo": None, "shipname": "OTHER SHIP", "flag": "PAN", "ssvid": "2"}],
+         "registryInfo": [{"imo": "9240885", "shipname": "EAST1", "flag": "HKG"}]},
+    ]}
+    monkeypatch.setattr(p, "gfw_get", lambda *a, **k: body)
+    rec = p.gfw_search_vessel("9240885")
+    assert p.gfw_vessel_ids(rec) == ["a", "b"]
+    assert p.count_identity_changes(rec) == 1  # EAST 1/HKG/2 -> WOLF/ABW/1

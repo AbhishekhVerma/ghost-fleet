@@ -16,22 +16,22 @@ The work follows the plan phases:
 | Phase | Scope | Status |
 |---|---|---|
 | 0 | Record decisions, lift guardrail, mark old docs historical | Done |
-| 1 | Real data: GFW + OpenSanctions pipeline, positions, monthly trend | Waiting for GFW token and `maritime.csv` |
+| 1 | Real data: GFW + OpenSanctions pipeline, positions, monthly trend | Done (120 vessels, snapshot 2026-09-30) |
 | 2 | Trader-focused dashboard polish | Not started |
 | 3 | Deploy live link | Not started |
 | 4 | Write-up, demo script, pitch deck, video shot list | Not started |
 | 5 | Version 0.2.0, changelog, log, handover | Not started |
 
-`dashboard/data/vessels.json` still holds **fictional** demo vessels, and the
-dashboard still places them at random positions.
+`dashboard/data/vessels.json` and `signal.json` now hold a **real** snapshot
+(120 shadow-fleet vessels). The dashboard does not read the new schema yet
+(Phase 2) and still places vessels at random positions.
 
 ## Immediate next work
 
-1. Owner: create a Global Fishing Watch API token and download the OpenSanctions
-   maritime CSV as `maritime.csv`.
-2. Extend `dark_fleet_pipeline.py` with a tanker filter, encounter positions and
-   dates, a monthly series, the UNKNOWN cargo path, and provenance.
-3. Generate the real snapshot and move the fictional data to `vessels.demo.json`.
+1. Phase 2: rewire `dashboard/app.js` to the new schema (real positions,
+   evidence timeline, monthly trend chart, value ranges, disclaimers).
+2. Phase 3: deploy `dashboard/` and fix the signal URL.
+3. Phase 4: write-up, demo script, pitch deck, video shot list.
 
 ## Setup
 
