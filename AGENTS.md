@@ -5,18 +5,19 @@ This repository is the source of truth for Ghost Fleet. Its canonical remote is
 
 ## Product direction guardrail
 
-The project is in concept definition. Read `docs/CONCEPT_OVERVIEW.md` before
-planning any product work. Do not create or extend a prototype, dashboard,
-pipeline, model, or product feature unless the project owner explicitly requests
-that implementation. Existing technical artifacts and performance claims are
-exploratory and are not validated product requirements. Prioritize the owner's
-decisions and documentation over inferred implementation work.
+The project owner approved `docs/PRODUCT_BRIEF.md` on 2026-09-30. Work only
+within that brief: a map-first tracker for commodity and energy traders, built
+on real OpenSanctions and Global Fishing Watch data, for the hackathon
+submission. Read `docs/CONCEPT_OVERVIEW.md` for background. Features outside
+the brief need the owner's explicit request. Never present estimates, risk
+scores, or heuristic classifiers as proof or as validated performance. Older
+planning documents marked "historical" are not requirements.
 
 ## Start of a session
 
 1. Run `git status --short --branch` and preserve work already in progress.
 2. Run `git fetch origin` and inspect divergence before integrating remote work.
-3. Read `README.md`, `docs/CONCEPT_OVERVIEW.md`, `docs/HANDOVER.md`, and the
+3. Read `README.md`, `docs/PRODUCT_BRIEF.md`, `docs/HANDOVER.md`, and the
    latest entry in `docs/SESSION_LOG.md` before changing the project.
 4. Read `VERSION` and use it as the current project version.
 

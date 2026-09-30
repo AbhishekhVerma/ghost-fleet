@@ -1,5 +1,9 @@
 # Ghost-Fleet: Hackathon Judge Review & Vulnerability Assessment
 
+> **Historical / exploratory (superseded 2026-09-30).** This document predates
+> the product brief. Scores, accuracy, and "built" claims here are unvalidated
+> hackathon brainstorming. See `docs/PRODUCT_BRIEF.md` for current direction.
+
 *Updated 2026-09-29 — evaluates pipeline with Cargo Load Detection + Live Dashboard*
 
 ## Overall Score: 85/100 (Current) → 92/100 (With Final Polish)

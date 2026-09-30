@@ -1,5 +1,9 @@
 # Ghost-Fleet: Planning & Architecture Analysis
 
+> **Historical / exploratory (superseded 2026-09-30).** This document predates
+> the product brief. Scores, accuracy, and "built" claims here are unvalidated
+> hackathon brainstorming. See `docs/PRODUCT_BRIEF.md` for current direction.
+
 *Updated 2026-09-29 — v0.1.0 with Cargo Load Detection + Live Maritime Tracker*
 
 ## Executive Summary

@@ -9,13 +9,13 @@ The current project version is **0.1.2**. The shared repository is
 
 ## Start here
 
-Read [Ghost Fleet: Concept Overview](docs/CONCEPT_OVERVIEW.md) for the complete
-plain-language explanation of the idea, problem, potential users, benefits,
-limitations, and product decisions that must be made before further development.
+- [Product brief](docs/PRODUCT_BRIEF.md): the approved direction. A map-first
+  "Hidden Supply Monitor" for commodity and energy traders.
+- [Concept overview](docs/CONCEPT_OVERVIEW.md): the full plain-language
+  background on the problem, evidence, and limitations.
 
-The project is currently in **concept definition**. Existing technical artifacts
-are exploratory; they do not define the final product. Further prototype work is
-paused until the project owner selects the target user and product direction.
+**Status:** hackathon build (trader-focused). Risk scores, cargo states, and
+value figures are directional estimates, not proof of wrongdoing.
 
 ## What the pipeline does
 

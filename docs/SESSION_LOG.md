@@ -60,3 +60,21 @@ structure, internal consistency, unsupported certainty, and formatting errors.
 **Remaining:** Review the concept overview with the project owner and capture the
 selected primary user, first decision, scope, evidence standard, freshness need,
 and immediate project objective in an approved product brief.
+
+## 2026-09-30 — Trader-focused hackathon build (v0.2.0, in progress)
+
+**Objective:** Turn Ghost Fleet into a submittable hackathon project today. The
+submission needs a demo video, a live link, a write-up, a demo script, and a
+pitch deck.
+
+**Decisions:** The owner chose commodity/energy traders as the first user and a
+map-first tracker as the first experience, using real GFW + OpenSanctions data.
+The defaults are recorded in `docs/PRODUCT_BRIEF.md`: oil tankers only, a
+directional-signal evidence standard, and a historical snapshot.
+
+**Phase 0 (done):** Added `docs/PRODUCT_BRIEF.md`. Lifted the concept-definition
+guardrail in `AGENTS.md` and `README.md`. Marked `docs/PLANNING.md`,
+`docs/IDEA_MAP.md`, and `docs/JUDGE_REVIEW.md` as historical. Rewrote
+`docs/HANDOVER.md` with a phase tracker.
+
+**Validation:** Documentation only. Reviewed the diff and checked for secrets.

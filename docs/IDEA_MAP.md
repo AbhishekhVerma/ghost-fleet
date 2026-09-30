@@ -1,5 +1,9 @@
 # Ghost-Fleet: Idea Map & Concept Deep-Dive
 
+> **Historical / exploratory (superseded 2026-09-30).** This document predates
+> the product brief. Scores, accuracy, and "built" claims here are unvalidated
+> hackathon brainstorming. See `docs/PRODUCT_BRIEF.md` for current direction.
+
 *Updated 2026-09-29 — includes Cargo Load Detection Model + Live Dashboard*
 
 ## 1. The Core Thesis
