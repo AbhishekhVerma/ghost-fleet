@@ -1,494 +1,554 @@
 """
-Dark Fleet Risk Score — Hackathon MVP Pipeline
-================================================
-Combines real, free data sources into a per-vessel risk score and
-estimates the economic value of sanctioned oil flows — a signal
-relevant to hedge funds, commodity desks, and energy traders.
+Ghost Fleet — Hidden Supply Monitor pipeline
+============================================
+Builds a dated, evidence-backed snapshot of sanctioned tanker activity for
+commodity and energy traders (see docs/PRODUCT_BRIEF.md).
 
-  1. OpenSanctions maritime.csv   -> known sanctioned / watchlisted hulls (ground truth)
-  2. Global Fishing Watch (GFW)   -> identity history (flag/name-hopping), encounters
-                                      (ship-to-ship transfers), and AIS-unmatched SAR
-                                      detections (physically-present, transponder-off vessels)
-  3. Economic Intelligence Layer  -> per-vessel cargo value estimates, aggregate sanctioned
-                                      oil flow index, and market-moving signal generation
+  1. OpenSanctions maritime CSV  -> sanctioned / sanctions-linked vessels (IMO, name)
+  2. Global Fishing Watch v3 API -> AIS identity history, AIS gaps, loitering,
+                                    port visits and encounters (with dates + positions)
+  3. Estimation layer            -> transparent risk score, capacity and value ranges,
+                                    monthly activity trend for the trader view
+
+Every output is a directional estimate, not proof of wrongdoing.
 
 BEFORE RUNNING:
-  1. pip install requests pandas --break-system-packages
+  1. python -m pip install -r requirements.txt
   2. Get a free GFW API token: https://globalfishingwatch.org/our-apis/tokens
-  3. Set it below or as an env var: export GFW_API_TOKEN="..."
-  4. Grab the current OpenSanctions maritime.csv link from
-     https://www.opensanctions.org/datasets/maritime/  (the dated path changes daily)
-     and download it locally, or point MARITIME_CSV_URL at it.
+     and set it:  $env:GFW_API_TOKEN = "..."
+  3. Download the OpenSanctions maritime export
+     (https://www.opensanctions.org/datasets/maritime/) and save it as maritime.csv
 
-NOTE ON LICENSING (be upfront about this in your pitch):
-  - GFW APIs: non-commercial use only. Fine for a hackathon demo; a commercial
-    launch needs a licensed AIS provider (Spire, Kpler, etc.) or a GFW commercial deal.
-  - OpenSanctions bulk data: free for non-commercial use (CC BY-NC 4.0); businesses
-    need a paid data license.
+Usage:
+  python dark_fleet_pipeline.py [--max 120] [--start 2025-10-01] [--end 2026-09-29]
+
+Raw API responses are cached under .cache/gfw/ so reruns are fast and offline-safe.
+
+LICENSING (state this in the pitch):
+  - GFW APIs: non-commercial use; attribution required.
+  - OpenSanctions bulk data: CC BY-NC 4.0; businesses need a data licence.
 """
 
-import os
-import json
-import time
-import math
+import argparse
 import datetime
-import requests
+import hashlib
+import json
+import math
+import os
+import time
+from collections import Counter, defaultdict
+from pathlib import Path
+
 import pandas as pd
-from collections import Counter
+import requests
 
 # ---------------------------------------------------------------------------
 # Config
 # ---------------------------------------------------------------------------
-GFW_TOKEN = os.environ.get("GFW_API_TOKEN", "PASTE_YOUR_TOKEN_HERE")
+GFW_TOKEN = os.environ.get("GFW_API_TOKEN", "")
 GFW_BASE = "https://gateway.api.globalfishingwatch.org/v3"
 HEADERS = {"Authorization": f"Bearer {GFW_TOKEN}"}
+CACHE_DIR = Path(".cache/gfw")
 
-# Point this at a local copy of the OpenSanctions maritime.csv you downloaded
 MARITIME_CSV_PATH = "maritime.csv"
+DASHBOARD_DATA_DIR = Path("dashboard/data")
 
-# Brent crude benchmark price (USD/barrel) — update for demo day.
-# Used to estimate the dollar value of sanctioned oil each dark vessel carries.
+# Brent crude reference price (USD/barrel). Static and configured — update on
+# demo day. Used only for rough value ranges.
 BRENT_CRUDE_USD_PER_BARREL = 78.50
 
-# Limit how many vessels you actually hit the API for during a hackathon demo —
-# pick a narratively relevant slice (e.g. Ukraine war-sanctions dataset) rather
-# than all 20k+ rows.
-MAX_VESSELS = 50
+MAX_VESSELS = 120
+
+EVENT_DATASETS = {
+    "gap": "public-global-gaps-events:latest",
+    "loitering": "public-global-loitering-events:latest",
+    "port_visit": "public-global-port-visits-events:latest",
+    "encounter": "public-global-encounters-events:latest",
+}
+
+# OpenSanctions risk tags: "mare.shadow" marks its shadow-fleet list,
+# "sanction" marks a vessel named on at least one sanctions programme.
+SHADOW_TAG = "mare.shadow"
+SANCTION_TAG = "sanction"
 
 
 # ---------------------------------------------------------------------------
-# Step 1: Load ground-truth sanctioned/watchlisted vessels
+# GFW HTTP with on-disk cache
+# ---------------------------------------------------------------------------
+def gfw_get(path: str, params: dict, offline: bool = False) -> dict | None:
+    """GET a GFW endpoint, caching the JSON body by URL + params."""
+    key = hashlib.sha1(json.dumps([path, params], sort_keys=True).encode()).hexdigest()
+    cache_file = CACHE_DIR / f"{key}.json"
+    if cache_file.exists():
+        return json.loads(cache_file.read_text(encoding="utf-8"))
+    if offline:
+        return None
+    if not GFW_TOKEN:
+        raise SystemExit("GFW_API_TOKEN is not set (see the header of this file).")
+
+    for attempt in range(4):
+        r = requests.get(f"{GFW_BASE}/{path}", headers=HEADERS, params=params, timeout=30)
+        if r.status_code == 429:
+            time.sleep(2 ** attempt * 5)
+            continue
+        if r.status_code != 200:
+            print(f"  ! GFW {path} -> HTTP {r.status_code}: {r.text[:160]}")
+            return None
+        body = r.json()
+        CACHE_DIR.mkdir(parents=True, exist_ok=True)
+        cache_file.write_text(json.dumps(body), encoding="utf-8")
+        return body
+    print(f"  ! GFW {path} -> rate limited, giving up")
+    return None
+
+
+# ---------------------------------------------------------------------------
+# Step 1: Load sanctioned / sanctions-linked vessels
 # ---------------------------------------------------------------------------
 def load_sanctioned_vessels(csv_path: str, max_rows: int = MAX_VESSELS) -> pd.DataFrame:
-    df = pd.read_csv(csv_path)
-    vessels = df[(df["type"] == "VESSEL") & df["imo"].notna()].copy()
-    # Prioritize the Ukraine war-sanctions dataset if present — most narratively
-    # relevant slice for a "dark fleet" hackathon pitch.
-    if "datasets" in vessels.columns:
-        priority = vessels[vessels["datasets"].str.contains("ua_war_sanctions", na=False)]
-        vessels = pd.concat([priority, vessels]).drop_duplicates(subset="imo")
+    """Shadow-fleet vessels from the OpenSanctions maritime export, most-listed first.
+
+    The export has one row per source entity, so a ship named by several lists
+    appears several times. Rows are merged by IMO before filtering."""
+    df = pd.read_csv(csv_path, low_memory=False)
+    rows = df[(df["type"] == "VESSEL") & df["imo"].notna()].copy()
+    rows["imo"] = (rows["imo"].astype(str).str.split(";").str[0]
+                   .str.replace("IMO", "", regex=False).str.strip())
+
+    def union(values: pd.Series) -> str:
+        return ";".join(sorted({t for v in values.dropna() for t in str(v).split(";") if t}))
+
+    shadow_ids = rows.loc[rows["id"].notna() & rows["risk"].fillna("").str.contains(SHADOW_TAG, regex=False)]
+    vessels = rows.groupby("imo").agg(
+        caption=("caption", "first"),
+        flag=("flag", "first"),
+        risk=("risk", union),
+        datasets=("datasets", union),
+    ).reset_index()
+    # Link to the shadow-fleet entity page where there is one.
+    vessels = vessels.merge(shadow_ids.drop_duplicates("imo")[["imo", "id", "url"]], on="imo", how="left")
+
+    vessels = vessels[vessels["risk"].str.contains(SHADOW_TAG, regex=False)].copy()
+    vessels["_sanctioned"] = vessels["risk"].str.contains(SANCTION_TAG, regex=False)
+    vessels["_lists"] = vessels["datasets"].str.count(";") + 1
+    vessels["_imo_num"] = pd.to_numeric(vessels["imo"], errors="coerce")
+    # Rank: sanctioned first, then by how many lists name the vessel, then newer
+    # IMO numbers (sea-going tankers rather than old river craft).
+    vessels = vessels.sort_values(["_sanctioned", "_lists", "_imo_num"], ascending=False)
     return vessels.head(max_rows)
 
 
 # ---------------------------------------------------------------------------
-# Step 2: Resolve each IMO to a GFW vessel identity record
+# Step 2: Resolve each IMO to a GFW vessel and its identity history
 # ---------------------------------------------------------------------------
-def gfw_search_vessel(imo: str) -> dict | None:
-    url = f"{GFW_BASE}/vessels/search"
-    params = {"query": imo, "datasets[0]": "public-global-vessel-identity:latest"}
-    r = requests.get(url, headers=HEADERS, params=params, timeout=20)
-    if r.status_code != 200:
-        return None
-    entries = r.json().get("entries", [])
+def gfw_search_vessel(imo: str, offline: bool = False) -> dict | None:
+    body = gfw_get("vessels/search", {
+        "query": imo,
+        "datasets[0]": "public-global-vessel-identity:latest",
+    }, offline)
+    entries = (body or {}).get("entries", [])
+    for entry in entries:  # prefer the entry that actually carries this IMO
+        infos = entry.get("selfReportedInfo", []) + entry.get("registryInfo", [])
+        if any(str(i.get("imo") or "") == imo for i in infos):
+            return entry
     return entries[0] if entries else None
 
 
+def identity_history(vessel_record: dict) -> list[dict]:
+    """Every AIS / registry identity the vessel has used, oldest first."""
+    rows = []
+    for source, key in (("AIS", "selfReportedInfo"), ("Registry", "registryInfo")):
+        for info in vessel_record.get(key, []):
+            rows.append({
+                "source": source,
+                "name": info.get("shipname"),
+                "flag": info.get("flag"),
+                "mmsi": info.get("ssvid"),
+                "from": (info.get("transmissionDateFrom") or "")[:10] or None,
+                "to": (info.get("transmissionDateTo") or "")[:10] or None,
+            })
+    return sorted(rows, key=lambda r: r["from"] or "")
+
+
 def count_identity_changes(vessel_record: dict) -> int:
-    """Flag-hopping / renaming is a documented shadow-fleet evasion pattern."""
-    registry_info = vessel_record.get("registryInfo", [])
-    names = {r.get("shipname") for r in registry_info if r.get("shipname")}
-    flags = {r.get("flag") for r in registry_info if r.get("flag")}
-    return max(len(names) - 1, 0) + max(len(flags) - 1, 0)
+    """Name / flag / MMSI hopping is a documented shadow-fleet evasion pattern."""
+    history = identity_history(vessel_record)
+    names = {h["name"] for h in history if h["name"]}
+    flags = {h["flag"] for h in history if h["flag"]}
+    mmsis = {h["mmsi"] for h in history if h["mmsi"]}
+    return max(len(names) - 1, 0) + max(len(flags) - 1, 0) + max(len(mmsis) - 1, 0)
+
+
+def gfw_vessel_ids(vessel_record: dict) -> list[str]:
+    return [i["id"] for i in vessel_record.get("selfReportedInfo", []) if i.get("id")]
+
+
+def vessel_dimensions(vessel_record: dict) -> tuple[float | None, float | None]:
+    """(gross tonnage, length in metres) from registry records, if published."""
+    gt = length = None
+    for info in vessel_record.get("registryInfo", []):
+        gt = gt or info.get("tonnageGt")
+        length = length or info.get("lengthM")
+    return gt, length
 
 
 # ---------------------------------------------------------------------------
-# Step 3: Pull ship-to-ship encounter events for that vessel
+# Step 3: Behaviour events (AIS gaps, loitering, port visits, encounters)
 # ---------------------------------------------------------------------------
-def count_encounters(gfw_vessel_id: str, start_date: str, end_date: str) -> int:
-    url = f"{GFW_BASE}/events"
-    params = {
-        "vessels[0]": gfw_vessel_id,
-        "datasets[0]": "public-global-encounters-events:latest",
-        "start-date": start_date,
-        "end-date": end_date,
-        "limit": 1,
-        "offset": 0,
-    }
-    r = requests.get(url, headers=HEADERS, params=params, timeout=20)
-    if r.status_code != 200:
-        return 0
-    return r.json().get("total", 0)
-
-
-# ---------------------------------------------------------------------------
-# Step 4: Composite risk score
-# ---------------------------------------------------------------------------
-def compute_risk_score(sanctions_hit: bool, identity_changes: int, encounters: int) -> int:
-    """
-    Simple, explainable scoring — good for a hackathon demo where judges will
-    ask "how did you weight this." Tune freely; the point is transparency,
-    not a black box.
-    """
-    score = 0
-    score += 40 if sanctions_hit else 0
-    score += min(identity_changes * 10, 30)   # cap contribution at 30
-    score += min(encounters * 5, 30)          # cap contribution at 30
-    return min(score, 100)
-
-
-# ---------------------------------------------------------------------------
-# Step 5: Economic / Monetary Intelligence (Hedge Fund Signal)
-# ---------------------------------------------------------------------------
-# Why this matters commercially:
-#   Hedge funds pay $50K–$500K/year for "alternative data" feeds.
-#   If you can estimate how many barrels the dark fleet is moving RIGHT NOW,
-#   that's a leading indicator for:
-#     • Oil supply hitting the market (price pressure downward)
-#     • Sanctions enforcement tightening (supply squeeze → price up)
-#     • Geopolitical risk escalation
-#   Bloomberg, Kpler, and Vortexa sell exactly this kind of signal.
-# ---------------------------------------------------------------------------
-
-# Typical cargo capacity by vessel type (deadweight tonnage → barrels).
-# 1 metric ton of crude ≈ 7.33 barrels.  These are conservative midpoints.
-VESSEL_TYPE_CAPACITY = {
-    "oil_or_chemical_tanker": 500_000,   # ~70K DWT Aframax
-    "tanker":                700_000,    # ~95K DWT Suezmax
-    "crude_oil_tanker":      1_400_000,  # ~200K DWT VLCC
-    "oil_tanker":            700_000,
-    "chemical_tanker":       200_000,
-    "lng_tanker":            500_000,
-    "product_tanker":        350_000,
-    "unknown":               500_000,    # conservative default
-}
-
-
-def estimate_cargo_barrels(vessel_record: dict) -> int:
-    """
-    Estimate how many barrels of crude a vessel can carry in one voyage,
-    using GFW vessel-type metadata.  Falls back to a conservative default.
-    """
-    vessel_type = "unknown"
-    registry_info = vessel_record.get("registryInfo", [])
-    for entry in registry_info:
-        vt = (entry.get("vesselType") or "").lower().replace(" ", "_")
-        if vt in VESSEL_TYPE_CAPACITY:
-            vessel_type = vt
+def fetch_events(vessel_ids: list[str], kind: str, start: str, end: str,
+                 offline: bool = False, page_size: int = 100, max_pages: int = 5) -> list[dict]:
+    if not vessel_ids:
+        return []
+    params: dict[str, str | int] = {f"vessels[{i}]": vid for i, vid in enumerate(vessel_ids)}
+    params.update({"datasets[0]": EVENT_DATASETS[kind], "start-date": start,
+                   "end-date": end, "limit": page_size})
+    events = []
+    for page in range(max_pages):
+        body = gfw_get("events", {**params, "offset": page * page_size}, offline)
+        entries = (body or {}).get("entries", [])
+        events.extend(entries)
+        if len(entries) < page_size:
             break
-    # Also check selfReportedInfo
-    if vessel_type == "unknown":
-        for entry in vessel_record.get("selfReportedInfo", []):
-            vt = (entry.get("vesselType") or "").lower().replace(" ", "_")
-            if vt in VESSEL_TYPE_CAPACITY:
-                vessel_type = vt
-                break
-    return VESSEL_TYPE_CAPACITY.get(vessel_type, 500_000)
+    return [compact_event(kind, e) for e in events]
+
+
+def compact_event(kind: str, e: dict) -> dict:
+    """Keep only what the dashboard evidence timeline needs."""
+    pos = e.get("position") or {}
+    out = {
+        "kind": kind,
+        "start": (e.get("start") or "")[:16] or None,
+        "end": (e.get("end") or "")[:16] or None,
+        "lat": pos.get("lat"),
+        "lon": pos.get("lon"),
+    }
+    if kind == "gap":
+        g = e.get("gap") or {}
+        out["hours"] = g.get("durationHours")
+        out["intentional"] = g.get("intentionalDisabling")
+    elif kind == "loitering":
+        out["hours"] = (e.get("loitering") or {}).get("totalTimeHours")
+    elif kind == "port_visit":
+        anch = ((e.get("portVisit") or {}).get("startAnchorage") or {})
+        out["port"] = anch.get("name")
+        out["port_flag"] = anch.get("flag")
+    elif kind == "encounter":
+        other = ((e.get("encounter") or {}).get("vessel") or {})
+        out["partner"] = other.get("name")
+        out["partner_flag"] = other.get("flag")
+    return out
+
+
+def latest_position(events: list[dict]) -> tuple[float | None, float | None, str | None]:
+    located = [e for e in events if e.get("lat") is not None and e.get("start")]
+    if not located:
+        return None, None, None
+    last = max(located, key=lambda e: e["start"])
+    return last["lat"], last["lon"], last["start"]
+
+
+# ---------------------------------------------------------------------------
+# Step 4: Transparent risk score
+# ---------------------------------------------------------------------------
+def compute_risk_score(sanctioned: bool, identity_changes: int,
+                       dark_gaps: int, loitering: int, encounters: int = 0) -> tuple[int, dict]:
+    """Additive, capped, explainable. Every vessel here is on a shadow-fleet list
+    (+30); a formal sanctions designation adds 10 more. Returns (score, breakdown)."""
+    breakdown = {
+        "sanctions": 40 if sanctioned else 30,
+        "identity": min(identity_changes * 10, 30),
+        "ais_gaps": min(dark_gaps * 5, 15),
+        "meetings": min((loitering + encounters) * 3, 15),
+    }
+    return min(sum(breakdown.values()), 100), breakdown
+
+
+# ---------------------------------------------------------------------------
+# Step 5: Capacity and value ranges
+# ---------------------------------------------------------------------------
+BARRELS_PER_TONNE = 7.33
+# Tanker deadweight is roughly 1.6-1.9x gross tonnage.
+DWT_PER_GT = (1.6, 1.9)
+# Fallback by length class (low, high barrels of crude-equivalent cargo).
+LENGTH_CLASSES = [
+    (300, (1_900_000, 2_200_000), "VLCC"),
+    (250, (900_000, 1_100_000), "Suezmax"),
+    (220, (600_000, 800_000), "Aframax/LR2"),
+    (180, (350_000, 550_000), "Panamax/LR1"),
+    (0, (200_000, 350_000), "MR/small tanker"),
+]
+UNKNOWN_CAPACITY = (300_000, 1_100_000)
+
+
+def estimate_cargo_barrels(gross_tonnage: float | None, length_m: float | None) -> dict:
+    """Capacity range for one full cargo, with the basis used."""
+    if gross_tonnage:
+        low, high = (int(gross_tonnage * f * BARRELS_PER_TONNE) for f in DWT_PER_GT)
+        return {"low": low, "high": high, "basis": f"gross tonnage {int(gross_tonnage):,} GT"}
+    if length_m:
+        for min_len, rng, label in LENGTH_CLASSES:
+            if length_m >= min_len:
+                return {"low": rng[0], "high": rng[1], "basis": f"length {length_m:.0f} m ({label})"}
+    return {"low": UNKNOWN_CAPACITY[0], "high": UNKNOWN_CAPACITY[1], "basis": "no size data (wide default range)"}
 
 
 def estimate_cargo_value_usd(barrels: int, price_per_barrel: float = BRENT_CRUDE_USD_PER_BARREL) -> float:
-    """Dollar value of a single full cargo at current Brent crude price."""
     return barrels * price_per_barrel
 
 
-def estimate_annual_flow_usd(
-    barrels_per_voyage: int,
-    encounters_per_year: int,
-    price_per_barrel: float = BRENT_CRUDE_USD_PER_BARREL,
-) -> float:
-    """
-    Rough annual sanctioned-oil revenue estimate for one vessel.
-    Each ship-to-ship encounter is treated as one cargo transfer.
-    A vessel with zero detected encounters gets a baseline of 4 voyages/year
-    (industry average for a tanker on a long-haul route).
-    """
-    transfers = max(encounters_per_year, 4)
-    return barrels_per_voyage * transfers * price_per_barrel
-
-
-def generate_market_signal(results_df: pd.DataFrame) -> dict:
-    """
-    Aggregate per-vessel economics into a single "Sanctioned Oil Flow Index"
-    — the kind of one-number signal a quant desk would subscribe to.
-    """
-    high_risk = results_df[results_df["risk_score"] >= 70]
-    total_vessels = len(high_risk)
-    total_barrels = high_risk["est_cargo_barrels"].sum() if "est_cargo_barrels" in high_risk.columns else 0
-    total_single_cargo_value = high_risk["est_cargo_value_usd"].sum() if "est_cargo_value_usd" in high_risk.columns else 0
-    total_annual_flow = high_risk["est_annual_flow_usd"].sum() if "est_annual_flow_usd" in high_risk.columns else 0
-
-    # Cargo load status breakdown
-    cargo_counts = Counter(high_risk.get("cargo_status", []))
-    loaded_count = cargo_counts.get("LOADED", 0)
-    ballast_count = cargo_counts.get("BALLAST", 0)
-    unknown_count = cargo_counts.get("UNKNOWN", 0)
-
-    return {
-        "signal_date": datetime.date.today().isoformat(),
-        "brent_crude_usd": BRENT_CRUDE_USD_PER_BARREL,
-        "high_risk_vessels": total_vessels,
-        "vessels_loaded": loaded_count,
-        "vessels_ballast": ballast_count,
-        "vessels_unknown": unknown_count,
-        "est_combined_cargo_barrels": int(total_barrels),
-        "est_single_cargo_value_usd": round(total_single_cargo_value, 2),
-        "est_annual_sanctioned_flow_usd": round(total_annual_flow, 2),
-        "est_active_cargo_value_usd": round(
-            high_risk.loc[high_risk.get("cargo_status", "") == "LOADED", "est_cargo_value_usd"].sum()
-            if "cargo_status" in high_risk.columns else 0, 2
-        ),
-        "risk_tier": (
-            "CRITICAL" if total_annual_flow > 5_000_000_000 else
-            "HIGH" if total_annual_flow > 1_000_000_000 else
-            "ELEVATED" if total_annual_flow > 500_000_000 else
-            "MODERATE"
-        ),
-    }
+def estimate_annual_voyages(port_visits: int, window_days: int) -> tuple[float, float]:
+    """Loaded voyages per year: about half of port calls are loading calls.
+    With no observed calls, assume 4-8 voyages a year."""
+    if port_visits <= 0 or window_days <= 0:
+        return 4.0, 8.0
+    per_year = (port_visits / 2) * 365 / window_days
+    per_year = min(max(per_year, 2.0), 12.0)
+    return round(per_year * 0.7, 1), round(per_year * 1.3, 1)
 
 
 # ---------------------------------------------------------------------------
-# Step 6: Cargo Load Detection Model
+# Step 6: Cargo state (heuristic, draft-based)
 # ---------------------------------------------------------------------------
-# How it works (the real physics):
-#   When a tanker is LOADED with oil, it sits deeper in the water (higher draft).
-#   When it's empty ("in ballast"), it rides high.
-#   AIS messages include a "draft" field — the depth the hull sits below water.
-#   We also use speed: loaded tankers travel 1-3 knots slower than ballast.
-#
-# This is the component you can honestly call a "trained model" to judges:
-#   - Features: draft reading, draft/depth ratio, speed, speed anomaly
-#   - Training data: known load/ballast states from port call patterns
-#   - Model: logistic regression (interpretable, not a black box)
-#
-# For the hackathon demo, we use a heuristic classifier based on published
-# marine engineering thresholds. A production version would train on
-# historical draft + port loading records.
-# ---------------------------------------------------------------------------
-
-# Published draft thresholds by vessel class (meters).
-# Source: Marine engineering references — loaded draft is typically 65-85%
-# of vessel depth depending on cargo density.
+# A loaded tanker sits deeper in the water. This rule-based classifier uses
+# published draft thresholds. It is NOT a trained model. The public GFW
+# identity data carries no draft, so for this snapshot it will usually and
+# honestly return UNKNOWN.
 VESSEL_DRAFT_THRESHOLDS = {
     "crude_oil_tanker":      {"loaded_min": 18.0, "ballast_max": 10.0, "max_draft": 22.5},
     "oil_tanker":            {"loaded_min": 14.0, "ballast_max": 8.0,  "max_draft": 17.0},
-    "tanker":                {"loaded_min": 14.0, "ballast_max": 8.0,  "max_draft": 17.0},
-    "oil_or_chemical_tanker": {"loaded_min": 12.0, "ballast_max": 7.0,  "max_draft": 15.0},
     "product_tanker":        {"loaded_min": 10.0, "ballast_max": 6.0,  "max_draft": 13.0},
-    "chemical_tanker":       {"loaded_min": 9.0,  "ballast_max": 5.5,  "max_draft": 11.0},
-    "lng_tanker":            {"loaded_min": 11.0, "ballast_max": 7.0,  "max_draft": 14.0},
     "unknown":               {"loaded_min": 12.0, "ballast_max": 7.0,  "max_draft": 15.0},
 }
-
-# Speed thresholds (knots) — loaded tankers travel slower.
-LOADED_SPEED_RANGE = (8.0, 13.0)    # typical loaded transit speed
-BALLAST_SPEED_RANGE = (12.0, 16.0)  # typically faster when empty
+LOADED_SPEED_RANGE = (8.0, 13.0)
+BALLAST_SPEED_RANGE = (12.0, 16.0)
 
 
 class CargoLoadClassifier:
-    """
-    Classifies whether a vessel is currently LOADED (carrying cargo) or in
-    BALLAST (empty/returning) using AIS-reported draft and speed features.
+    """Returns (status, confidence, features). status is LOADED | BALLAST | UNKNOWN."""
 
-    This is the ML model component — uses a feature-based scoring approach
-    that mirrors logistic regression weights derived from marine engineering
-    data. In production, you'd train on historical draft + port records.
+    def classify(self, draft_m: float | None, speed_knots: float | None,
+                 vessel_type: str = "unknown") -> tuple:
+        t = VESSEL_DRAFT_THRESHOLDS.get(vessel_type, VESSEL_DRAFT_THRESHOLDS["unknown"])
+        features = {"draft_m": draft_m, "speed_knots": speed_knots, "vessel_type": vessel_type}
+        if draft_m is None:
+            return ("UNKNOWN", 0.0, features)  # no draft -> no claim
 
-    Returns: (status, confidence, features_dict)
-      status: "LOADED" | "BALLAST" | "UNKNOWN"
-      confidence: 0.0 - 1.0
-      features: dict of extracted features for explainability
-    """
-
-    def classify(self, vessel_record: dict, vessel_type: str = "unknown") -> tuple:
-        features = self._extract_features(vessel_record, vessel_type)
-        score = self._score(features, vessel_type)
-        confidence = self._sigmoid(abs(score) * 2)  # map to 0-1
-
-        if score > 0.3:
-            return ("LOADED", round(confidence, 2), features)
-        elif score < -0.3:
-            return ("BALLAST", round(confidence, 2), features)
+        score, evidence = 0.0, 1
+        if draft_m >= t["loaded_min"]:
+            score += 0.7
+        elif draft_m <= t["ballast_max"]:
+            score -= 0.7
         else:
-            return ("UNKNOWN", round(1.0 - confidence, 2), features)
-
-    def _extract_features(self, vessel_record: dict, vessel_type: str) -> dict:
-        """Extract draft, speed, and derived features from vessel data."""
-        draft = None
-        speed = None
-        last_position = None
-
-        # Try to get draft/speed from selfReportedInfo (most recent AIS)
-        for info in vessel_record.get("selfReportedInfo", []):
-            if info.get("draught") and draft is None:
-                try:
-                    draft = float(info["draught"])
-                except (ValueError, TypeError):
-                    pass
-            if info.get("speed") and speed is None:
-                try:
-                    speed = float(info["speed"])
-                except (ValueError, TypeError):
-                    pass
-
-        # Also check registryInfo for depth/draft specs
-        max_draft = VESSEL_DRAFT_THRESHOLDS.get(vessel_type, {}).get("max_draft", 15.0)
-        draft_ratio = draft / max_draft if draft and max_draft else None
-
-        return {
-            "draft_m": draft,
-            "speed_knots": speed,
-            "max_draft_m": max_draft,
-            "draft_ratio": round(draft_ratio, 3) if draft_ratio else None,
-            "vessel_type": vessel_type,
-        }
-
-    def _score(self, features: dict, vessel_type: str) -> float:
-        """
-        Feature-weighted scoring — mirrors logistic regression coefficients.
-        Positive = likely loaded, negative = likely ballast.
-        """
-        thresholds = VESSEL_DRAFT_THRESHOLDS.get(vessel_type,
-                     VESSEL_DRAFT_THRESHOLDS["unknown"])
-        score = 0.0
-        evidence_count = 0
-
-        # Draft-based signal (strongest indicator)
-        draft = features.get("draft_m")
-        if draft is not None:
-            evidence_count += 1
-            if draft >= thresholds["loaded_min"]:
-                score += 0.7  # strong loaded signal
-            elif draft <= thresholds["ballast_max"]:
-                score -= 0.7  # strong ballast signal
-            else:
-                # In between — use ratio for gradient
-                mid = (thresholds["loaded_min"] + thresholds["ballast_max"]) / 2
-                score += 0.3 * (draft - mid) / (thresholds["loaded_min"] - mid)
-
-        # Draft ratio signal (normalized)
-        ratio = features.get("draft_ratio")
-        if ratio is not None:
-            evidence_count += 1
-            if ratio > 0.75:
-                score += 0.4
-            elif ratio < 0.50:
-                score -= 0.4
-
-        # Speed-based signal (secondary indicator)
-        speed = features.get("speed_knots")
-        if speed is not None:
-            evidence_count += 1
-            if LOADED_SPEED_RANGE[0] <= speed <= LOADED_SPEED_RANGE[1]:
+            mid = (t["loaded_min"] + t["ballast_max"]) / 2
+            score += 0.3 * (draft_m - mid) / (t["loaded_min"] - mid)
+        if speed_knots is not None:
+            evidence += 1
+            if LOADED_SPEED_RANGE[0] <= speed_knots <= LOADED_SPEED_RANGE[1]:
                 score += 0.2
-            elif speed > BALLAST_SPEED_RANGE[0]:
+            elif speed_knots > BALLAST_SPEED_RANGE[0]:
                 score -= 0.2
+        score /= max(evidence * 0.5, 1.0)
 
-        # Reduce confidence if we have limited evidence
-        if evidence_count == 0:
-            return 0.0
-        return score / max(evidence_count * 0.5, 1.0)
-
-    @staticmethod
-    def _sigmoid(x: float) -> float:
-        """Standard sigmoid — maps score magnitude to confidence."""
-        return 1.0 / (1.0 + math.exp(-x))
+        confidence = round(1.0 / (1.0 + math.exp(-abs(score) * 2)), 2)
+        if score > 0.3:
+            return ("LOADED", confidence, features)
+        if score < -0.3:
+            return ("BALLAST", confidence, features)
+        return ("UNKNOWN", 0.0, features)
 
 
-# Module-level classifier instance
 cargo_classifier = CargoLoadClassifier()
+
+
+# ---------------------------------------------------------------------------
+# Step 7: Trader signal — snapshot + monthly trend
+# ---------------------------------------------------------------------------
+def monthly_series(vessels: list[dict], start: str, end: str) -> list[dict]:
+    """Per month: events by kind and the number of distinct active vessels."""
+    counts = defaultdict(Counter)
+    active = defaultdict(set)
+    for v in vessels:
+        for e in v.get("events", []):
+            if not e.get("start"):
+                continue
+            month = e["start"][:7]
+            counts[month][e["kind"]] += 1
+            active[month].add(v["imo"])
+
+    months, cur = [], datetime.date.fromisoformat(start).replace(day=1)
+    last = datetime.date.fromisoformat(end)
+    while cur <= last:
+        months.append(cur.strftime("%Y-%m"))
+        cur = (cur.replace(day=28) + datetime.timedelta(days=4)).replace(day=1)
+
+    return [{
+        "month": m,
+        "active_vessels": len(active[m]),
+        "ais_gaps": counts[m]["gap"],
+        "loitering": counts[m]["loitering"],
+        "port_visits": counts[m]["port_visit"],
+        "encounters": counts[m]["encounter"],
+    } for m in months]
+
+
+def generate_market_signal(vessels: list[dict], start: str, end: str) -> dict:
+    high_risk = [v for v in vessels if v["risk_score"] >= 70]
+    status = Counter(v["cargo_status"] for v in high_risk)
+    series = monthly_series(vessels, start, end)
+
+    # Trend: last 3 full months vs the 3 before, on active vessels.
+    recent = sum(m["active_vessels"] for m in series[-4:-1])
+    prior = sum(m["active_vessels"] for m in series[-7:-4])
+    trend_pct = round((recent - prior) / prior * 100, 1) if prior else None
+
+    return {
+        "signal_date": datetime.date.today().isoformat(),
+        "window": {"start": start, "end": end},
+        "brent_crude_usd": BRENT_CRUDE_USD_PER_BARREL,
+        "vessels_screened": len(vessels),
+        "vessels_matched": sum(1 for v in vessels if v["gfw_match"]),
+        "vessels_located": sum(1 for v in vessels if v.get("_lat") is not None),
+        "high_risk_vessels": len(high_risk),
+        "vessels_loaded": status.get("LOADED", 0),
+        "vessels_ballast": status.get("BALLAST", 0),
+        "vessels_unknown": status.get("UNKNOWN", 0),
+        "est_single_cargo_barrels": {
+            "low": sum(v["est_cargo_barrels"]["low"] for v in high_risk),
+            "high": sum(v["est_cargo_barrels"]["high"] for v in high_risk),
+        },
+        "est_annual_flow_usd": {
+            "low": round(sum(v["est_annual_flow_usd"]["low"] for v in high_risk)),
+            "high": round(sum(v["est_annual_flow_usd"]["high"] for v in high_risk)),
+        },
+        "activity_trend_3m_pct": trend_pct,
+        "monthly": series,
+        "provenance": {
+            "sanctions": "OpenSanctions maritime dataset (CC BY-NC 4.0)",
+            "behaviour": "Global Fishing Watch API v3 (non-commercial)",
+            "price": f"Static Brent reference ${BRENT_CRUDE_USD_PER_BARREL}/bbl",
+            "note": "Directional estimates only. Not proof of wrongdoing or trading advice.",
+        },
+    }
 
 
 # ---------------------------------------------------------------------------
 # Main
 # ---------------------------------------------------------------------------
+def analyse_vessel(row: pd.Series, start: str, end: str, offline: bool) -> dict:
+    imo = row["imo"]
+    base = {
+        "imo": imo,
+        "name": row.get("caption") or row.get("name") or "UNKNOWN",
+        "opensanctions_id": row.get("id"),
+        "sanctioned": bool(row.get("_sanctioned")),
+        "flag_listed": row.get("flag"),
+        "sanction_programs": str(row.get("datasets") or ""),
+        "opensanctions_url": row.get("url"),
+    }
+    window_days = (datetime.date.fromisoformat(end) - datetime.date.fromisoformat(start)).days
+
+    record = gfw_search_vessel(imo, offline)
+    if record is None:
+        score, breakdown = compute_risk_score(base["sanctioned"], 0, 0, 0)
+        cap = estimate_cargo_barrels(None, None)
+        return {**base, "gfw_match": False, "risk_score": score, "risk_breakdown": breakdown,
+                "cargo_status": "UNKNOWN", "cargo_confidence": 0.0,
+                "est_cargo_barrels": cap, "est_annual_flow_usd": annual_flow(cap, 0, window_days),
+                "identity_history": [], "events": [], "_lat": None, "_lng": None}
+
+    ids = gfw_vessel_ids(record)
+    events = []
+    for kind in EVENT_DATASETS:
+        events.extend(fetch_events(ids, kind, start, end, offline))
+    events.sort(key=lambda e: e["start"] or "")
+
+    kinds = Counter(e["kind"] for e in events)
+    dark_gaps = sum(1 for e in events if e["kind"] == "gap" and e.get("intentional") is not False)
+    history = identity_history(record)
+    changes = count_identity_changes(record)
+    score, breakdown = compute_risk_score(base["sanctioned"], changes, dark_gaps, kinds["loitering"], kinds["encounter"])
+
+    gt, length = vessel_dimensions(record)
+    cap = estimate_cargo_barrels(gt, length)
+    status, conf, _ = cargo_classifier.classify(None, None)  # no public draft feed
+    lat, lng, seen = latest_position(events)
+    latest = history[-1] if history else {}
+
+    return {
+        **base,
+        "gfw_match": True,
+        "gfw_vessel_id": ids[0] if ids else None,
+        "current_name": latest.get("name"),
+        "current_flag": latest.get("flag"),
+        "identity_changes": changes,
+        "ais_gaps": dark_gaps,
+        "loitering_events": kinds["loitering"],
+        "port_visits": kinds["port_visit"],
+        "encounters": kinds["encounter"],
+        "risk_score": score,
+        "risk_breakdown": breakdown,
+        "cargo_status": status,
+        "cargo_confidence": conf,
+        "gross_tonnage": gt,
+        "length_m": length,
+        "est_cargo_barrels": cap,
+        "est_annual_flow_usd": annual_flow(cap, kinds["port_visit"], window_days),
+        "identity_history": history,
+        "events": events[-60:],  # most recent evidence only, keeps JSON small
+        "_lat": lat,
+        "_lng": lng,
+        "last_seen": seen,
+    }
+
+
+def annual_flow(cap: dict, port_visits: int, window_days: int) -> dict:
+    v_low, v_high = estimate_annual_voyages(port_visits, window_days)
+    return {
+        "low": round(estimate_cargo_value_usd(cap["low"]) * v_low),
+        "high": round(estimate_cargo_value_usd(cap["high"]) * v_high),
+        "voyages_per_year": [v_low, v_high],
+    }
+
+
 def main():
-    vessels = load_sanctioned_vessels(MARITIME_CSV_PATH)
+    today = datetime.date.today()
+    parser = argparse.ArgumentParser(description=__doc__.split("\n")[1])
+    parser.add_argument("--csv", default=MARITIME_CSV_PATH)
+    parser.add_argument("--max", type=int, default=MAX_VESSELS)
+    parser.add_argument("--start", default=(today - datetime.timedelta(days=365)).isoformat())
+    parser.add_argument("--end", default=(today - datetime.timedelta(days=3)).isoformat())
+    parser.add_argument("--offline", action="store_true", help="use cached API responses only")
+    args = parser.parse_args()
+
+    vessels = load_sanctioned_vessels(args.csv, args.max)
+    print(f"Screening {len(vessels)} sanctioned vessels, {args.start} -> {args.end}")
+
     results = []
+    for n, (_, row) in enumerate(vessels.iterrows(), 1):
+        v = analyse_vessel(row, args.start, args.end, args.offline)
+        results.append(v)
+        print(f"  [{n:>3}/{len(vessels)}] {v['imo']} {str(v['name'])[:28]:<28} "
+              f"match={v['gfw_match']!s:<5} score={v['risk_score']:>3} events={len(v['events'])}")
 
-    for _, row in vessels.iterrows():
-        imo = str(row["imo"]).split(";")[0].strip()  # some rows have multiple IMOs
-        name = row.get("caption", "UNKNOWN")
+    results.sort(key=lambda v: v["risk_score"], reverse=True)
+    signal = generate_market_signal(results, args.start, args.end)
 
-        record = gfw_search_vessel(imo)
-        if record is None:
-            results.append({
-                "imo": imo, "name": name, "gfw_match": False,
-                "risk_score": 40,
-                "cargo_status": "UNKNOWN",
-                "cargo_confidence": 0.0,
-                "est_cargo_barrels": 500_000,
-                "est_cargo_value_usd": estimate_cargo_value_usd(500_000),
-                "est_annual_flow_usd": estimate_annual_flow_usd(500_000, 0),
-            })
-            continue
+    flat = pd.DataFrame([{k: v for k, v in r.items() if not isinstance(v, (list, dict))} for r in results])
+    flat.to_csv("dark_fleet_risk_scores.csv", index=False)
 
-        identity_changes = count_identity_changes(record)
-        self_reported = record.get("selfReportedInfo", [])
-        gfw_vessel_id = self_reported[0]["id"] if self_reported else None
+    DASHBOARD_DATA_DIR.mkdir(parents=True, exist_ok=True)
+    (DASHBOARD_DATA_DIR / "signal.json").write_text(json.dumps(signal, indent=2), encoding="utf-8")
+    (DASHBOARD_DATA_DIR / "vessels.json").write_text(json.dumps({
+        "generated": signal["signal_date"],
+        "window": signal["window"],
+        "data_kind": "real",
+        "vessels": results,
+    }, indent=1, default=str), encoding="utf-8")
 
-        encounters = 0
-        if gfw_vessel_id:
-            encounters = count_encounters(gfw_vessel_id, "2025-01-01", "2026-09-27")
-
-        score = compute_risk_score(True, identity_changes, encounters)
-        cargo_bbls = estimate_cargo_barrels(record)
-        cargo_val = estimate_cargo_value_usd(cargo_bbls)
-        annual_flow = estimate_annual_flow_usd(cargo_bbls, encounters)
-
-        # Cargo load detection — the ML model component
-        vtype = "unknown"
-        for entry in record.get("registryInfo", []):
-            vt = (entry.get("vesselType") or "").lower().replace(" ", "_")
-            if vt in VESSEL_TYPE_CAPACITY:
-                vtype = vt
-                break
-        cargo_status, cargo_conf, cargo_features = cargo_classifier.classify(record, vtype)
-
-        results.append({
-            "imo": imo,
-            "name": name,
-            "gfw_match": True,
-            "identity_changes": identity_changes,
-            "encounters": encounters,
-            "risk_score": score,
-            "cargo_status": cargo_status,
-            "cargo_confidence": cargo_conf,
-            "draft_m": cargo_features.get("draft_m"),
-            "speed_knots": cargo_features.get("speed_knots"),
-            "est_cargo_barrels": cargo_bbls,
-            "est_cargo_value_usd": cargo_val,
-            "est_annual_flow_usd": annual_flow,
-        })
-
-        time.sleep(0.3)  # be polite to the API / stay under rate limits
-
-    out = pd.DataFrame(results).sort_values("risk_score", ascending=False)
-    out.to_csv("dark_fleet_risk_scores.csv", index=False)
-    print(out.to_string(index=False))
-    print("\nSaved -> dark_fleet_risk_scores.csv")
-
-    # ── Economic Intelligence Summary ──────────────────────────────────────
-    signal = generate_market_signal(out)
-    print("\n" + "=" * 70)
-    print("  📊  SANCTIONED OIL FLOW INDEX  —  HEDGE FUND SIGNAL")
-    print("=" * 70)
-    print(f"  Date:                        {signal['signal_date']}")
-    print(f"  Brent Crude (USD/bbl):       ${signal['brent_crude_usd']:.2f}")
-    print(f"  High-Risk Vessels (≥70):     {signal['high_risk_vessels']}")
-    print(f"    ├─ Cargo LOADED:           {signal['vessels_loaded']}")
-    print(f"    ├─ In BALLAST (empty):     {signal['vessels_ballast']}")
-    print(f"    └─ Status UNKNOWN:         {signal['vessels_unknown']}")
-    print(f"  Est. Combined Cargo:         {signal['est_combined_cargo_barrels']:,} barrels")
-    print(f"  Est. Single-Cargo Value:     ${signal['est_single_cargo_value_usd']:,.0f}")
-    print(f"  Est. Active Cargo (loaded):  ${signal['est_active_cargo_value_usd']:,.0f}")
-    print(f"  Est. Annual Sanctioned Flow: ${signal['est_annual_sanctioned_flow_usd']:,.0f}")
-    print(f"  Risk Tier:                   {signal['risk_tier']}")
-    print("=" * 70)
-    print("\n  💡 Signal interpretation for trading desks:")
-    print("     • Rising flow → more sanctioned oil reaching market → bearish pressure on Brent")
-    print("     • Falling flow → enforcement tightening → supply squeeze → bullish pressure")
-    print("     • Sudden spike in high-risk vessels → geopolitical escalation indicator")
-    print("     • LOADED vs BALLAST ratio → real-time supply pressure gauge")
-
-    # Save the signal as a separate JSON for dashboard / API consumption
-    with open("sanctioned_oil_flow_signal.json", "w") as f:
-        json.dump(signal, f, indent=2)
-    print("\n  Saved -> sanctioned_oil_flow_signal.json")
-
-    # Save dashboard-ready vessel data as JSON for the live tracker
-    dashboard_data = out.to_dict(orient="records")
-    with open("dashboard/data/vessels.json", "w") as f:
-        json.dump({"generated": signal["signal_date"], "vessels": dashboard_data}, f, indent=2)
-    print("  Saved -> dashboard/data/vessels.json")
+    print(f"\nMatched {signal['vessels_matched']}/{signal['vessels_screened']}, "
+          f"located {signal['vessels_located']}, high-risk {signal['high_risk_vessels']}, "
+          f"3-month activity trend {signal['activity_trend_3m_pct']}%")
+    print("Saved -> dashboard/data/vessels.json, dashboard/data/signal.json, dark_fleet_risk_scores.csv")
 
 
 if __name__ == "__main__":

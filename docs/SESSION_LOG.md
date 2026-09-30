@@ -78,3 +78,22 @@ guardrail in `AGENTS.md` and `README.md`. Marked `docs/PLANNING.md`,
 `docs/HANDOVER.md` with a phase tracker.
 
 **Validation:** Documentation only. Reviewed the diff and checked for secrets.
+
+**Phase 1a (code done, waiting for token):** Rewrote `dark_fleet_pipeline.py`
+against the real GFW v3 schema, verified against the official
+`gfw-api-python-client` 1.4.0 models, and the real OpenSanctions export
+(2026-09-29, 23,453 rows).
+- Found: GFW vessel records carry no draft, speed, or vessel type. Public
+  encounter types cover fishing, carrier, support, and bunker vessels only, so
+  tanker-to-tanker transfers are unlikely to appear.
+- Found: the OpenSanctions export has one row per source entity, with an
+  `IMO` prefix. Rows are now merged by IMO and filtered on the `mare.shadow`
+  tag (892 vessels, 772 sanctioned).
+- Changed: evidence now comes from AIS gaps, loitering, port visits, encounters,
+  and identity history across all AIS identities. Capacity and value are
+  ranges from tonnage or length. Cargo state is `UNKNOWN` without draft. This
+  fixes a bug where zero evidence reported 50% confidence. Added a monthly
+  trend and provenance, a response cache, CLI flags, and `tests/test_pipeline.py`
+  (7 offline tests). The fictional data is saved as `vessels.demo.json`.
+- Validation: `python -m pytest -q` passed 7/7, and the loader ran on the real
+  CSV. There has been no live GFW call yet because the token is still pending.

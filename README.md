@@ -19,20 +19,23 @@ value figures are directional estimates, not proof of wrongdoing.
 
 ## What the pipeline does
 
-1. Loads vessels with IMO numbers from an OpenSanctions maritime CSV export.
-2. Resolves each IMO against the Global Fishing Watch vessel API.
-3. Counts identity changes and ship-to-ship encounter events.
-4. Produces a transparent risk score from 0 to 100.
-5. Estimates cargo value and an aggregate sanctioned oil flow signal.
+1. Loads the OpenSanctions maritime export, merges rows by IMO, and keeps
+   vessels on its **shadow-fleet list** (`mare.shadow`). Sanctioned vessels and
+   vessels named by the most lists come first.
+2. Resolves each IMO against Global Fishing Watch and records every AIS and
+   registry identity (names, flags, MMSIs) it has used.
+3. Pulls dated, positioned behaviour events for all of those identities: AIS
+   gaps, loitering, port visits, and encounters.
+4. Produces a transparent 0–100 risk score with a per-factor breakdown.
+5. Estimates capacity and value **ranges** from tonnage or length, plus a
+   monthly activity trend for the trader view.
 
-The output is intended for a hackathon demonstration. The economic values are
-estimates based on configured vessel capacities, encounter counts, and a static
-Brent price. They are not trading advice or independently verified cargo flows.
+Cargo state (loaded or ballast) needs a draft reading. The public GFW data has
+none, so it is reported as `UNKNOWN` rather than guessed.
 
 ## Setup
 
-Requirements: Python 3.10 or newer, a Global Fishing Watch API token, and a
-current OpenSanctions maritime CSV export.
+Requirements: Python 3.10 or newer and a Global Fishing Watch API token.
 
 ```powershell
 python -m venv .venv
@@ -41,24 +44,28 @@ python -m pip install -r requirements.txt
 $env:GFW_API_TOKEN = "your-token"
 ```
 
-Download the current maritime export from the
+Download the current export from the
 [OpenSanctions maritime dataset](https://www.opensanctions.org/datasets/maritime/)
-and save it as `maritime.csv` in the repository root. The dataset, token, and
-generated outputs are ignored by Git.
+and save it as `maritime.csv` in the repository root.
 
 ## Run
 
 ```powershell
-python dark_fleet_pipeline.py
+python dark_fleet_pipeline.py --max 120            # last 12 months by default
+python dark_fleet_pipeline.py --offline            # rebuild from cached responses
+python -m pytest -q                                # offline unit tests
 ```
 
-The pipeline writes:
+Outputs:
 
-- `dark_fleet_risk_scores.csv` with per-vessel scores and estimates.
-- `sanctioned_oil_flow_signal.json` with the aggregate market signal.
+- `dashboard/data/vessels.json` and `dashboard/data/signal.json` hold the
+  dashboard snapshot. They are committed deliberately, so the hosted demo works
+  without a token.
+- `dark_fleet_risk_scores.csv` is a flat per-vessel table (git-ignored).
+- `.cache/gfw/` holds raw API responses (git-ignored).
 
-Before a demo, review the date range and `BRENT_CRUDE_USD_PER_BARREL` in
-`dark_fleet_pipeline.py`. The current pipeline limits API work to 50 vessels.
+`dashboard/data/vessels.demo.json` contains **fictional** vessels, kept only
+as an offline fallback.
 
 ## Data and licensing
 

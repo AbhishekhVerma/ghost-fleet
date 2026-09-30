@@ -23,3 +23,6 @@ Thumbs.db
 maritime.csv
 dark_fleet_risk_scores.csv
 sanctioned_oil_flow_signal.json
+
+# Cached API responses
+.cache/
