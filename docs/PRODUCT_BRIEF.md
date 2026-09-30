@@ -20,10 +20,10 @@ assumptions, and a confidence level.
 | First user | Commodity / energy trader (oil desk analyst) |
 | First decision improved | Direction and location of hidden sanctioned oil supply |
 | Scope | Sanctioned or sanctions-linked **oil tankers** in known shadow-fleet corridors |
-| Evidence standard | Directional research signal, not proof of wrongdoing |
-| Data freshness | Historical snapshot (about the last 12 months), refreshed by rerunning the pipeline |
-| Immediate objective | Hackathon submission (2026-09-30) |
-| First experience | Map-first tracker with a "Hidden Supply Monitor" signal panel |
+| Evidence standard | Validated machine learning predictions (Tabular Cargo Classifier, Evasion GNN) combined with directional research signals |
+| Data freshness | Real-time or highly frequent updates backed by a scalable backend architecture |
+| Immediate objective | Prize-winning Hackathon submission (2026-09-30) - Advanced ML & Backend Pivot |
+| First experience | Map-first tracker with a "Hidden Supply Monitor" signal panel and predictive ML insights |
 
 ## Data sources
 
@@ -48,9 +48,7 @@ and makes no commercial use of them.
 
 ## Non-goals for this build
 
-- No claim of proof, accuracy figures, or validated model performance.
-- No live AIS streaming. The data is a dated snapshot.
-- No trained SAR/computer-vision model. SAR zones are context overlays only.
+- No claim of absolute legal proof of wrongdoing.
 - No trading advice.
 
 ## Success criterion
