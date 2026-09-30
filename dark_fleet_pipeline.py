@@ -59,7 +59,7 @@ BRENT_CRUDE_USD_PER_BARREL = 78.50
 
 MAX_VESSELS = 120
 # Events kept per vessel in the dashboard file. Aggregates use every event.
-EVENTS_PER_VESSEL = 60
+EVENTS_PER_VESSEL = 30
 
 EVENT_DATASETS = {
     "gap": "public-global-gaps-events:latest",
@@ -575,7 +575,7 @@ def main():
         "window": signal["window"],
         "data_kind": "real",
         "vessels": results,
-    }, indent=1, default=str, allow_nan=False), encoding="utf-8")
+    }, separators=(",", ":"), default=str, allow_nan=False), encoding="utf-8")  # compact: machine-read, keeps page load light
 
     print(f"\nMatched {signal['vessels_matched']}/{signal['vessels_screened']}, "
           f"located {signal['vessels_located']}, high-risk {signal['high_risk_vessels']}, "
