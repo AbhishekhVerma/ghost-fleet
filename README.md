@@ -1,110 +1,166 @@
+<div align="center">
+
 # Ghost Fleet
 
-Ghost Fleet is a proposed maritime intelligence platform for identifying ships
-that may be hiding sanctioned or suspicious activity, explaining the evidence,
-and estimating the operational and economic significance.
+**Hidden oil supply, seen from the sea.**
+A map-first monitor of the sanctioned shadow-fleet tankers, built for oil traders from public data.
 
-The current project version is **0.2.0**. The shared repository is
-[`aaaditt/ghost-fleet`](https://github.com/aaaditt/ghost-fleet).
+[![Live demo](https://img.shields.io/badge/live_demo-ghost--fleet.vercel.app-a3165f?style=flat-square)](https://ghost-fleet.vercel.app)
+![Version](https://img.shields.io/badge/version-0.3.0-1c2a35?style=flat-square)
+![Tests](https://img.shields.io/badge/tests-12_passing-2e7d5b?style=flat-square)
+![Data](https://img.shields.io/badge/data-OpenSanctions_%2B_Global_Fishing_Watch-5d707a?style=flat-square)
+[![Licence: MIT](https://img.shields.io/badge/licence-MIT-1c2a35?style=flat-square)](LICENSE)
 
-**Live demo: https://ghost-fleet.vercel.app** · start with the vessel
-[EAST 1 / WOLF](https://ghost-fleet.vercel.app/#imo=9240885)
+<img src="docs/demo.gif" alt="Demo: landing on the map of 276 shadow-fleet tankers, searching the former name Longevity 7, and opening WOLF's dossier with seven identities" width="900">
 
-![Ghost Fleet overview: map of 112 shadow-fleet tankers with the monthly activity trend](docs/screenshot-overview.png)
+**[Try it live](https://ghost-fleet.vercel.app)** · **[Open WOLF's dossier](https://ghost-fleet.vercel.app/#imo=9240885)**
 
-## Submission
+</div>
 
-- [Write-up](docs/submission/WRITEUP.md)
-- [Demo script and video shot list](docs/submission/DEMO_SCRIPT.md)
-- [Pitch deck outline](docs/submission/PITCH.md)
+---
 
-## Start here
+> A ship can turn off its beacon, but it cannot stop leaving a trail.
 
-- [Product brief](docs/PRODUCT_BRIEF.md): the approved direction. A map-first
-  "Hidden Supply Monitor" for commodity and energy traders.
-- [Concept overview](docs/CONCEPT_OVERVIEW.md): the full plain-language
-  background on the problem, evidence, and limitations.
+Since 2022, a shadow fleet of ageing tankers has kept sanctioned Russian oil
+moving by changing names, flags and radio identities. Ghost Fleet answers the
+oil trader's question: **is that hidden supply rising or falling, and where is
+it moving?**
 
-**Status:** hackathon build (trader-focused). Risk scores, cargo states, and
-value figures are directional estimates, not proof of wrongdoing.
+## What the snapshot shows
 
-## What the pipeline does
+| | 30 Sep 2025 – 27 Sep 2026 |
+|---|---|
+| Shadow-fleet tankers screened | **300**, all matched to tracking data; 276 with a recent position |
+| Active tankers, last 3 months vs the 3 before | **−10%** (595 vs 662 vessel-months) |
+| Switched identity at least once | **289** (124 switched five or more times) |
+| Different flags used | **81** |
+| Flagged today to a landlocked country | **11**: Malawi 4, Mali 3, Zimbabwe 3, Botswana 1 |
+| Now flagged to Russia | **115** |
+| Busiest ports of call | Nakhodka, Suez, Port Said, Primorsk, Ust-Luga |
 
-1. Loads the OpenSanctions maritime export, merges rows by IMO, and keeps
-   vessels on its **shadow-fleet list** (`mare.shadow`). Sanctioned vessels and
-   vessels named by the most lists come first.
-2. Resolves each IMO against Global Fishing Watch and records every AIS and
-   registry identity (names, flags, MMSIs) it has used.
-3. Pulls dated, positioned behaviour events for all of those identities: AIS
-   gaps, loitering, port visits, and encounters.
-4. Produces a transparent 0–100 risk score with a per-factor breakdown.
-5. Estimates capacity and value **ranges** from tonnage or length, plus a
-   monthly activity trend for the trader view.
+## One hull, seven identities
 
-Cargo state (loaded or ballast) needs a draft reading. The public GFW data has
-none, so it is reported as `UNKNOWN` rather than guessed.
+IMO 9240885 is named on 10 sanctions and watch lists.
+[Open its dossier →](https://ghost-fleet.vercel.app/#imo=9240885)
 
-## Setup
+| # | Name | Flag | Years |
+|---|---|---|---|
+| 1 | Torm Gertrud | Denmark | 2012–14 |
+| 2 | Torm Gertrud | Marshall Islands | 2014–16 |
+| 3 | Torm Gertrud | Singapore | 2016–20 |
+| 4 | East 1 | Hong Kong | 2020–25 |
+| 5 | Longevity 7 | Palau | 2025–26 |
+| 6 | Wolf | Malawi (landlocked) | Jun–Sep 2026 |
+| 7 | **Wolf** | **Aruba** | since 7 Sep 2026 |
 
-Requirements: Python 3.10 or newer and a Global Fishing Watch API token.
+Its score of 75 is fully explained: 40 for the listings, 30 for identity
+switches and 5 for loitering at sea. This summer it idled offshore for up to
+14 days at a time.
+
+## Features
+
+- **Chart-style map.** Every located tanker at its latest observed position,
+  with high-risk vessels in the magenta that nautical charts use for hazards.
+- **Trend headline.** One plain sentence over 12 months of bars, showing
+  exactly which months are compared.
+- **Busiest ports.** The export routes appear straight out of the data.
+- **Vessel dossier.** Score breakdown, every identity in order, recent dated
+  activity plotted on the map, size and value ranges, and source links to
+  OpenSanctions and Global Fishing Watch.
+- **Search by former name.** Type a name a ship used years ago and find what
+  it is called today.
+- **Honest unknowns.** No draft data means cargo state is "unknown", not a
+  guess. Values are ranges with their assumptions shown.
+
+<p align="center">
+  <img src="docs/screenshot-overview.png" alt="Overview: map, trend headline and figures" width="49%">
+  <img src="docs/screenshot-dossier.png" alt="Dossier: WOLF's score breakdown and identity list" width="49%">
+</p>
+
+## How it works
+
+```mermaid
+flowchart LR
+    A[OpenSanctions<br/>maritime dataset] -->|merge rows by IMO,<br/>keep shadow-fleet tag| B[892 shadow-fleet<br/>vessels]
+    B -->|most-listed first| C[Global Fishing Watch v3]
+    C -->|every AIS identity<br/>per IMO| D[Identity history]
+    C -->|a year of dated,<br/>positioned events| E[Port calls · loitering<br/>· AIS gaps]
+    D --> F[Score, size and value<br/>ranges, monthly trend]
+    E --> F
+    F -->|dated JSON snapshot| G[Static dashboard<br/>on Vercel]
+```
+
+1. **Who is in the fleet.** The OpenSanctions export has one row per source
+   list. Merging by IMO gives 892 shadow-fleet vessels, 772 of them formally
+   sanctioned.
+2. **What they did.** Global Fishing Watch often stores each re-flag as a
+   separate record. We collect every identity carrying the IMO, then a year
+   of port calls, loitering and AIS gaps across all of them.
+3. **What it means.** An additive score, capacity ranges from gross
+   tonnage, and a monthly activity series, written to a dated snapshot the
+   dashboard reads.
+
+## What we show, and what we don't claim
+
+| We show | We don't claim |
+|---|---|
+| Which listed ships are active, and where | That any ship broke the law |
+| Identity switches, from tracking records | Whether a tanker is loaded: free data has no draft |
+| Value as an upper bound ($64–145 bn a year) | Barrels actually moved |
+| Long idle periods at sea | That a ship-to-ship transfer happened |
+| A dated one-year snapshot of 300 of 892 ships | A live feed |
+
+## Run it yourself
+
+Requirements: Python 3.10+, a free
+[Global Fishing Watch API token](https://globalfishingwatch.org/our-apis/tokens),
+and the [OpenSanctions maritime export](https://www.opensanctions.org/datasets/maritime/)
+saved as `maritime.csv` in the repo root.
 
 ```powershell
-python -m venv .venv
-.\.venv\Scripts\Activate.ps1
+python -m venv .venv; .\.venv\Scripts\Activate.ps1
 python -m pip install -r requirements.txt
 $env:GFW_API_TOKEN = "your-token"
+
+python dark_fleet_pipeline.py --max 300 --start 2025-09-30 --end 2026-09-27
+python dark_fleet_pipeline.py --max 300 --offline      # rebuild from the response cache
+python -m pytest -q                                    # offline tests
+python scripts/figures.py                              # every figure quoted in the docs
+
+cd dashboard; python -m http.server 8765               # http://localhost:8765
+vercel deploy --prod --cwd dashboard                   # deploy (static, no build)
+python scripts/record_demo.py                          # re-record docs/demo.gif
 ```
 
-Download the current export from the
-[OpenSanctions maritime dataset](https://www.opensanctions.org/datasets/maritime/)
-and save it as `maritime.csv` in the repository root.
+The pipeline writes `dashboard/data/vessels.json` and `signal.json`. These
+are committed deliberately, so the hosted demo needs no token. Raw API
+responses are cached in `.cache/gfw/` (git-ignored).
+`dashboard/data/vessels.demo.json` holds **fictional** vessels for offline
+use and is never deployed.
 
-## Run
+## Project docs
 
-```powershell
-python dark_fleet_pipeline.py --max 120            # last 12 months by default
-python dark_fleet_pipeline.py --offline            # rebuild from cached responses
-python -m pytest -q                                # offline unit tests
-```
+- [Product brief](docs/PRODUCT_BRIEF.md): who it is for and the one question
+  it answers.
+- [Concept overview](docs/CONCEPT_OVERVIEW.md): the problem from first
+  principles.
+- Submission: [write-up](docs/submission/WRITEUP.md),
+  [demo script](docs/submission/DEMO_SCRIPT.md),
+  [pitch outline](docs/submission/PITCH.md).
+- [Handover](docs/HANDOVER.md), [changelog](CHANGELOG.md),
+  [session log](docs/SESSION_LOG.md), [collaboration rules](AGENTS.md).
 
-Outputs:
+## Data and licence
 
-- `dashboard/data/vessels.json` and `dashboard/data/signal.json` hold the
-  dashboard snapshot. They are committed deliberately, so the hosted demo works
-  without a token.
-- `dark_fleet_risk_scores.csv` is a flat per-vessel table (git-ignored).
-- `.cache/gfw/` holds raw API responses (git-ignored).
+The code is released under the [MIT licence](LICENSE). The data keeps its
+sources' terms:
 
-`dashboard/data/vessels.demo.json` contains **fictional** vessels, kept only
-as an offline fallback.
+- **OpenSanctions:** CC BY-NC 4.0; businesses need a data licence.
+- **Global Fishing Watch:** non-commercial use, with attribution.
+- **Basemap:** Esri, GEBCO, NOAA.
 
-## Dashboard
+A commercial version would use licensed AIS data (with draft readings, to
+tell loaded from empty) and a commercial sanctions-data licence.
 
-```powershell
-cd dashboard
-python -m http.server 8765      # then open http://localhost:8765
-```
-
-It is deployed as a static site on Vercel from the `dashboard/` folder
-(`vercel deploy --prod --cwd dashboard`). `dashboard/.vercelignore` keeps local
-env files and the fictional demo data out of the upload.
-
-The page opens on the trader view: the headline trend, the monthly bars,
-figures, the busiest ports, and a searchable vessel list. Selecting a vessel
-opens its dossier with its score breakdown, every identity it has used, recent
-dated activity plotted on the chart, and size and value ranges. Open a vessel
-directly with `#imo=<IMO>`, for example `#imo=9240885`.
-
-## Data and licensing
-
-- Global Fishing Watch API access has usage and licensing conditions. Confirm
-  the terms before commercial use.
-- OpenSanctions bulk data is offered under terms that may require a commercial
-  license for business use.
-
-## Collaboration
-
-Repository working conventions live in [AGENTS.md](AGENTS.md). At the end of
-each working session, update the version, append the [session log](docs/SESSION_LOG.md),
-and refresh the [handover](docs/HANDOVER.md). User-visible changes also belong
-in [CHANGELOG.md](CHANGELOG.md).
+A sanctions listing or a score is not proof of wrongdoing, and nothing here
+is trading advice.
