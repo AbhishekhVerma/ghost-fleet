@@ -144,6 +144,11 @@ function renderMonitor(signal, meta) {
     $("fig-tracked").textContent = `${signal.vessels_located} of ${signal.vessels_screened}`;
     $("fig-high").textContent = signal.high_risk_vessels;
     $("fig-ports").textContent = ports.toLocaleString("en-GB");
+    const known = vessels.filter((v) => v.cargo_status !== "UNKNOWN").length;
+    $("fig-cargo").textContent = `${known} of ${vessels.length}`;
+    $("fig-cargo-note").textContent = known
+        ? "Estimated from draft readings where available."
+        : "Public tracking data has no draft readings, so no vessel's load is inferred.";
     const flow = signal.est_annual_flow_usd;
     $("fig-value").textContent = `${fmtUsdRange(flow.low, flow.high)} a year`;
     $("fig-value-note").textContent =
@@ -193,7 +198,7 @@ function renderList(query) {
         <li><button type="button" data-imo="${esc(v.imo)}">
             <span class="v-name">${esc(titleCase(v.current_name || v.name))}</span>
             <span class="v-score ${v.risk_score >= HIGH_RISK ? "high" : ""}">${v.risk_score}</span>
-            <span class="v-meta">IMO ${esc(v.imo)} · ${esc(flagName(v.current_flag))} · ${v.identity_changes} identity switches</span>
+            <span class="v-meta">IMO ${esc(v.imo)} · ${esc(flagName(v.current_flag))} · ${v.identity_changes} identity switches${v._lat == null ? ' · <span class="v-nopos">No recent position</span>' : ""}</span>
         </button></li>`).join("")
         : `<li class="empty">No vessel matches “${esc(query)}”. Try a former name or the 7-digit IMO.</li>`;
 }
@@ -255,14 +260,15 @@ function openDossier(imo) {
         : `${v.cargo_status.toLowerCase()} (${Math.round(v.cargo_confidence * 100)}% confidence)`;
 
     const programs = v.sanction_programs.split(";").filter(Boolean).length;
-    $("d-sources").innerHTML =
-        `Named on ${programs} lists. ` +
-        (v.opensanctions_url ? `<a href="${esc(v.opensanctions_url)}" target="_blank" rel="noopener">See the listings on OpenSanctions</a>.` : "");
+    const links = [];
+    if (v.opensanctions_url) links.push(`<a href="${esc(v.opensanctions_url)}" target="_blank" rel="noopener">See the listings on OpenSanctions</a>`);
+    if (v.gfw_vessel_id) links.push(`<a href="https://globalfishingwatch.org/map/vessel/${encodeURIComponent(v.gfw_vessel_id)}" target="_blank" rel="noopener">View on Global Fishing Watch</a>`);
+    $("d-sources").innerHTML = `Named on ${programs} lists. ${links.join(". ")}${links.length ? "." : ""}`;
 
     $("view-monitor").hidden = true;
     $("view-dossier").hidden = false;
     $("rail").scrollTop = 0;
-    drawTrack(v);
+    if (v._lat != null) drawTrack(v); else clearTrack();
     $("d-name").focus?.();
 }
 

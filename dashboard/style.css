@@ -186,6 +186,7 @@ a:hover { color: var(--magenta); }
 .v-meta { grid-column: 1; font-size: 12px; color: var(--sounding); }
 .v-score { grid-row: 1 / span 2; align-self: center; font-weight: 600; }
 .v-score.high { color: var(--magenta); }
+.v-nopos { color: var(--magenta); }
 .empty { padding: 12px 4px; color: var(--sounding); font-size: 13px; }
 
 /* Dossier */
