@@ -58,6 +58,8 @@ DASHBOARD_DATA_DIR = Path("dashboard/data")
 BRENT_CRUDE_USD_PER_BARREL = 78.50
 
 MAX_VESSELS = 120
+# Events kept per vessel in the dashboard file. Aggregates use every event.
+EVENTS_PER_VESSEL = 60
 
 EVENT_DATASETS = {
     "gap": "public-global-gaps-events:latest",
@@ -241,8 +243,9 @@ def compact_event(kind: str, e: dict) -> dict:
     elif kind == "loitering":
         out["hours"] = (e.get("loitering") or {}).get("totalTimeHours")
     elif kind == "port_visit":
-        anch = ((e.get("portVisit") or {}).get("startAnchorage") or {})
-        out["port"] = anch.get("name")
+        visit = e.get("port_visit") or e.get("portVisit") or {}  # raw API uses port_visit
+        anch = visit.get("startAnchorage") or {}
+        out["port"] = anch.get("name") or anch.get("topDestination") or anch.get("id")
         out["port_flag"] = anch.get("flag")
     elif kind == "encounter":
         other = ((e.get("encounter") or {}).get("vessel") or {})
@@ -439,6 +442,9 @@ def generate_market_signal(vessels: list[dict], start: str, end: str) -> dict:
         },
         "activity_trend_3m_pct": trend_pct,
         "monthly": series,
+        "top_ports": [{"port": p, "calls": n} for p, n in Counter(
+            e["port"] for v in vessels for e in v.get("events", [])
+            if e["kind"] == "port_visit" and e.get("port")).most_common(10)],
         "provenance": {
             "sanctions": "OpenSanctions maritime dataset (CC BY-NC 4.0)",
             "behaviour": "Global Fishing Watch API v3 (non-commercial)",
@@ -451,7 +457,13 @@ def generate_market_signal(vessels: list[dict], start: str, end: str) -> dict:
 # ---------------------------------------------------------------------------
 # Main
 # ---------------------------------------------------------------------------
+def clean(value):
+    """pandas uses NaN for missing cells; JSON needs null."""
+    return None if value is None or (isinstance(value, float) and math.isnan(value)) else value
+
+
 def analyse_vessel(row: pd.Series, start: str, end: str, offline: bool) -> dict:
+    row = row.map(clean)
     imo = row["imo"]
     base = {
         "imo": imo,
@@ -511,7 +523,7 @@ def analyse_vessel(row: pd.Series, start: str, end: str, offline: bool) -> dict:
         "est_cargo_barrels": cap,
         "est_annual_flow_usd": annual_flow(cap, kinds["port_visit"], window_days),
         "identity_history": history,
-        "events": events[-60:],  # most recent evidence only, keeps JSON small
+        "events": events,  # full list; trimmed only when written (see EVENTS_PER_VESSEL)
         "_lat": lat,
         "_lng": lng,
         "last_seen": seen,
@@ -548,19 +560,22 @@ def main():
               f"match={v['gfw_match']!s:<5} score={v['risk_score']:>3} events={len(v['events'])}")
 
     results.sort(key=lambda v: v["risk_score"], reverse=True)
-    signal = generate_market_signal(results, args.start, args.end)
+    signal = generate_market_signal(results, args.start, args.end)  # uses all events
+    for v in results:
+        v["events"] = v["events"][-EVENTS_PER_VESSEL:]  # most recent evidence only
 
     flat = pd.DataFrame([{k: v for k, v in r.items() if not isinstance(v, (list, dict))} for r in results])
     flat.to_csv("dark_fleet_risk_scores.csv", index=False)
 
     DASHBOARD_DATA_DIR.mkdir(parents=True, exist_ok=True)
-    (DASHBOARD_DATA_DIR / "signal.json").write_text(json.dumps(signal, indent=2), encoding="utf-8")
+    # allow_nan=False: NaN is not valid JSON and breaks the dashboard.
+    (DASHBOARD_DATA_DIR / "signal.json").write_text(json.dumps(signal, indent=2, allow_nan=False), encoding="utf-8")
     (DASHBOARD_DATA_DIR / "vessels.json").write_text(json.dumps({
         "generated": signal["signal_date"],
         "window": signal["window"],
         "data_kind": "real",
         "vessels": results,
-    }, indent=1, default=str), encoding="utf-8")
+    }, indent=1, default=str, allow_nan=False), encoding="utf-8")
 
     print(f"\nMatched {signal['vessels_matched']}/{signal['vessels_screened']}, "
           f"located {signal['vessels_located']}, high-risk {signal['high_risk_vessels']}, "

@@ -29,7 +29,7 @@ EVENTS = {
     ],
     "public-global-port-visits-events:latest": [
         {"start": "2026-08-20T00:00:00Z", "position": {"lat": 44.7, "lon": 37.8},
-         "portVisit": {"startAnchorage": {"name": "NOVOROSSIYSK", "flag": "RUS"}}},
+         "port_visit": {"startAnchorage": {"name": "NOVOROSSIYSK", "flag": "RUS"}}},
     ],
     "public-global-encounters-events:latest": [],
 }
@@ -86,11 +86,13 @@ def test_analyse_vessel_end_to_end(monkeypatch):
     assert v["gfw_match"] and v["current_name"] == "NEW NAME"
     assert (v["_lat"], v["_lng"], v["last_seen"][:10]) == (44.7, 37.8, "2026-08-20")  # latest event wins
     assert v["ais_gaps"] == 1 and v["loitering_events"] == 1 and v["port_visits"] == 1
+    assert v["events"][-1]["port"] == "NOVOROSSIYSK"
     assert v["risk_score"] == 40 + 10 + 5 + 0  # 1 loitering event < 4
     assert v["cargo_status"] == "UNKNOWN" and v["cargo_confidence"] == 0.0
     assert v["est_annual_flow_usd"]["low"] < v["est_annual_flow_usd"]["high"]
 
     signal = p.generate_market_signal([v], "2025-10-01", "2026-09-27")
+    assert signal["top_ports"] == [{"port": "NOVOROSSIYSK", "calls": 1}]
     assert signal["high_risk_vessels"] == 0 and len(signal["monthly"]) == 12  # 55 < 70; Oct-2025..Sep-2026
 
 
@@ -120,3 +122,13 @@ def test_search_merges_split_entries_and_drops_foreign_identities(monkeypatch):
     rec = p.gfw_search_vessel("9240885")
     assert p.gfw_vessel_ids(rec) == ["a", "b"]
     assert p.count_identity_changes(rec) == 1  # EAST 1/HKG/2 -> WOLF/ABW/1
+
+
+def test_missing_csv_cells_become_json_null(monkeypatch):
+    import json
+    monkeypatch.setattr(p, "gfw_get", fake_gfw_get)
+    row = pd.Series({"imo": "9000001", "caption": "X", "id": "os", "datasets": "ua",
+                     "_sanctioned": True, "flag": float("nan"), "url": float("nan")})
+    v = p.analyse_vessel(row, "2025-10-01", "2026-09-27", offline=False)
+    assert v["flag_listed"] is None
+    json.dumps(v, allow_nan=False, default=str)  # raises on NaN

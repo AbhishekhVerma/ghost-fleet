@@ -67,6 +67,19 @@ Outputs:
 `dashboard/data/vessels.demo.json` contains **fictional** vessels, kept only
 as an offline fallback.
 
+## Dashboard
+
+```powershell
+cd dashboard
+python -m http.server 8765      # then open http://localhost:8765
+```
+
+The page opens on the trader view: the headline trend, the monthly bars,
+figures, the busiest ports, and a searchable vessel list. Selecting a vessel
+opens its dossier with its score breakdown, every identity it has used, recent
+dated activity plotted on the chart, and size and value ranges. Open a vessel
+directly with `#imo=<IMO>`, for example `#imo=9240885`.
+
 ## Data and licensing
 
 - Global Fishing Watch API access has usage and licensing conditions. Confirm

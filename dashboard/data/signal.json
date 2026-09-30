@@ -20,69 +20,69 @@
     "low": 22592916332,
     "high": 52352425105
   },
-  "activity_trend_3m_pct": -13.1,
+  "activity_trend_3m_pct": -15.3,
   "monthly": [
     {
       "month": "2025-10",
-      "active_vessels": 63,
-      "ais_gaps": 4,
-      "loitering": 145,
-      "port_visits": 91,
+      "active_vessels": 90,
+      "ais_gaps": 5,
+      "loitering": 310,
+      "port_visits": 152,
       "encounters": 0
     },
     {
       "month": "2025-11",
-      "active_vessels": 63,
+      "active_vessels": 83,
       "ais_gaps": 0,
-      "loitering": 141,
-      "port_visits": 94,
+      "loitering": 293,
+      "port_visits": 148,
       "encounters": 0
     },
     {
       "month": "2025-12",
-      "active_vessels": 75,
+      "active_vessels": 97,
       "ais_gaps": 1,
-      "loitering": 164,
-      "port_visits": 124,
+      "loitering": 287,
+      "port_visits": 176,
       "encounters": 0
     },
     {
       "month": "2026-01",
-      "active_vessels": 72,
+      "active_vessels": 87,
       "ais_gaps": 1,
-      "loitering": 259,
-      "port_visits": 97,
+      "loitering": 426,
+      "port_visits": 134,
       "encounters": 0
     },
     {
       "month": "2026-02",
-      "active_vessels": 74,
+      "active_vessels": 85,
       "ais_gaps": 0,
-      "loitering": 207,
-      "port_visits": 108,
+      "loitering": 304,
+      "port_visits": 126,
       "encounters": 0
     },
     {
       "month": "2026-03",
-      "active_vessels": 91,
+      "active_vessels": 95,
       "ais_gaps": 2,
-      "loitering": 297,
-      "port_visits": 137,
+      "loitering": 419,
+      "port_visits": 150,
       "encounters": 0
     },
     {
       "month": "2026-04",
-      "active_vessels": 86,
+      "active_vessels": 88,
       "ais_gaps": 0,
-      "loitering": 389,
-      "port_visits": 100,
+      "loitering": 404,
+      "port_visits": 105,
       "encounters": 0
     },
     {
       "month": "2026-05",
-      "active_vessels": 90,
+      "active_vessels": 91,
       "ais_gaps": 0,
-      "loitering": 368,
+      "loitering": 378,
       "port_visits": 103,
       "encounters": 0
     },
@@ -90,8 +90,8 @@
       "month": "2026-06",
       "active_vessels": 70,
       "ais_gaps": 0,
-      "loitering": 221,
-      "port_visits": 119,
+      "loitering": 228,
+      "port_visits": 120,
       "encounters": 0
     },
     {
@@ -117,6 +117,48 @@
       "loitering": 191,
       "port_visits": 90,
       "encounters": 0
+    }
+  ],
+  "top_ports": [
+    {
+      "port": "NAKHODKA",
+      "calls": 187
+    },
+    {
+      "port": "PORT SAID",
+      "calls": 164
+    },
+    {
+      "port": "SUEZ SOUTH ANCHORAGE",
+      "calls": 163
+    },
+    {
+      "port": "UST LUGA",
+      "calls": 112
+    },
+    {
+      "port": "PRIMORSK",
+      "calls": 87
+    },
+    {
+      "port": "ISTANBUL",
+      "calls": 45
+    },
+    {
+      "port": "BUSAN",
+      "calls": 44
+    },
+    {
+      "port": "VISTINO",
+      "calls": 42
+    },
+    {
+      "port": "DE KASTRI",
+      "calls": 42
+    },
+    {
+      "port": "CANAKKALE",
+      "calls": 28
     }
   ],
   "provenance": {

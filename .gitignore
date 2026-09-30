@@ -26,3 +26,6 @@ sanctioned_oil_flow_signal.json
 
 # Cached API responses
 .cache/
+
+# Browser test artefacts
+.playwright-mcp/

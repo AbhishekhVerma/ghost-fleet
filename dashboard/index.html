@@ -3,190 +3,109 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Ghost Fleet — Dark Vessel & Sanctions Evasion Tracker</title>
-    <meta name="description" content="Real-time maritime intelligence dashboard tracking sanctioned vessels, dark fleet activity, and illicit oil flows using satellite radar and AIS data.">
+    <title>Ghost Fleet</title>
+    <meta name="description" content="A dated snapshot of sanctioned shadow-fleet tanker activity for oil traders, built from OpenSanctions and Global Fishing Watch data.">
 
-    <!-- Leaflet CSS -->
-    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
-
-    <!-- Google Fonts -->
+    <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns=%27http://www.w3.org/2000/svg%27 viewBox=%270 0 16 16%27%3E%3Ccircle cx=%278%27 cy=%278%27 r=%275%27 fill=%27%23a3165f%27/%3E%3C/svg%3E">
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" integrity="sha384-sHL9NAb7lN7rfvG5lfHpm643Xkcjzp4jFvuavGOndn6pjVqS6ny56CAt3nsEVT4H" crossorigin="anonymous">
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
-
+    <link href="https://fonts.googleapis.com/css2?family=Newsreader:ital,opsz,wght@1,6..72,400;1,6..72,500&family=Public+Sans:wght@400;500;600&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="style.css">
 </head>
 <body>
-    <!-- Top Bar -->
-    <header id="top-bar">
-        <div class="top-bar-left">
-            <div class="logo">
-                <span class="logo-icon">👻</span>
-                <span class="logo-text">GHOST FLEET</span>
-                <span class="logo-badge">LIVE</span>
-            </div>
-        </div>
-        <div class="top-bar-center">
-            <div class="stat-pill">
-                <span class="stat-label">Vessels Tracked</span>
-                <span class="stat-value" id="stat-total">—</span>
-            </div>
-            <div class="stat-pill stat-danger">
-                <span class="stat-label">High Risk</span>
-                <span class="stat-value" id="stat-highrisk">—</span>
-            </div>
-            <div class="stat-pill stat-loaded">
-                <span class="stat-label">Cargo Loaded</span>
-                <span class="stat-value" id="stat-loaded">—</span>
-            </div>
-            <div class="stat-pill stat-money">
-                <span class="stat-label">Est. Active Cargo</span>
-                <span class="stat-value" id="stat-cargo-value">—</span>
-            </div>
-        </div>
-        <div class="top-bar-right">
-            <button id="btn-toggle-sar" class="toolbar-btn" title="Toggle SAR Overlay">
-                <span>🛰️</span> SAR Overlay
-            </button>
-            <button id="btn-toggle-encounters" class="toolbar-btn" title="Toggle Encounter Lines">
-                <span>🔗</span> Encounters
-            </button>
-        </div>
+    <header class="masthead">
+        <h1 class="wordmark">Ghost Fleet</h1>
+        <p class="snapshot" id="snapshot">Loading snapshot…</p>
     </header>
 
-    <!-- Main Content -->
-    <div id="main-content">
-        <!-- Map -->
-        <div id="map-container">
+    <main class="layout">
+        <section class="chart" aria-label="Map of vessel positions">
             <div id="map"></div>
-            <!-- Map overlay: Risk Tier Badge -->
-            <div id="risk-tier-overlay">
-                <div class="tier-label">SANCTIONED OIL FLOW INDEX</div>
-                <div class="tier-value" id="tier-value">—</div>
-                <div class="tier-flow" id="tier-flow">—</div>
+            <div class="key" aria-hidden="true">
+                <span><i class="dot dot-high"></i>Risk 70+</span>
+                <span><i class="dot dot-low"></i>Below 70</span>
+                <span class="key-track"><i class="ring"></i>Loitering at sea</span>
+                <span class="key-track"><i class="square"></i>Port call</span>
             </div>
-        </div>
+        </section>
 
-        <!-- Sidebar -->
-        <aside id="sidebar" class="sidebar-collapsed">
-            <div id="sidebar-toggle" title="Toggle Sidebar">‹</div>
+        <aside class="rail" id="rail">
+            <!-- Monitor view -->
+            <div id="view-monitor">
+                <p class="lede" id="headline">Reading the snapshot…</p>
+                <figure class="trend">
+                    <svg id="trend-svg" role="img" aria-labelledby="trend-caption"></svg>
+                    <figcaption id="trend-caption">Tankers with recorded activity each month</figcaption>
+                </figure>
 
-            <!-- Signal Panel (default view) -->
-            <div id="panel-signal" class="panel">
-                <h2>📊 Market Signal</h2>
-                <div class="signal-grid">
-                    <div class="signal-card">
-                        <div class="signal-card-label">Brent Crude</div>
-                        <div class="signal-card-value" id="sig-brent">$—</div>
+                <dl class="figures">
+                    <div><dt>Vessels tracked</dt><dd id="fig-tracked">—</dd></div>
+                    <div><dt>Scored 70 or higher</dt><dd id="fig-high">—</dd></div>
+                    <div><dt>Port calls, full months</dt><dd id="fig-ports">—</dd></div>
+                    <div>
+                        <dt>Cargo value if every voyage sailed full</dt>
+                        <dd id="fig-value">—</dd>
+                        <p class="footnote" id="fig-value-note"></p>
                     </div>
-                    <div class="signal-card">
-                        <div class="signal-card-label">High-Risk Fleet</div>
-                        <div class="signal-card-value" id="sig-fleet">—</div>
-                    </div>
-                    <div class="signal-card">
-                        <div class="signal-card-label">Loaded / Ballast</div>
-                        <div class="signal-card-value" id="sig-loadratio">—</div>
-                    </div>
-                    <div class="signal-card signal-card-wide">
-                        <div class="signal-card-label">Est. Annual Sanctioned Flow</div>
-                        <div class="signal-card-value signal-card-big" id="sig-annual">$—</div>
-                    </div>
-                    <div class="signal-card signal-card-wide">
-                        <div class="signal-card-label">Est. Active Cargo (loaded vessels)</div>
-                        <div class="signal-card-value signal-card-big" id="sig-active">$—</div>
-                    </div>
-                </div>
-                <div class="signal-interpretation">
-                    <h3>💡 Signal Interpretation</h3>
-                    <ul>
-                        <li><span class="arrow-down">↗</span> Rising flow → bearish on Brent (more sanctioned oil hitting market)</li>
-                        <li><span class="arrow-up">↘</span> Falling flow → bullish on Brent (sanctions enforcement tightening)</li>
-                        <li><span class="arrow-spike">⚡</span> Spike in high-risk vessels → geopolitical escalation indicator</li>
-                        <li><span class="arrow-ratio">⚖️</span> LOADED/BALLAST ratio → real-time supply pressure gauge</li>
-                    </ul>
-                </div>
+                </dl>
+
+                <section class="ports">
+                    <h2>Busiest ports of call</h2>
+                    <ol id="port-list"></ol>
+                </section>
+
+                <section class="vessels">
+                    <h2>Vessels</h2>
+                    <label class="search">
+                        <span class="visually-hidden">Search vessels</span>
+                        <input type="search" id="vessel-search" placeholder="Name, former name or IMO">
+                    </label>
+                    <ul id="vessel-list"></ul>
+                </section>
             </div>
 
-            <!-- Vessel Detail Panel (shown on click) -->
-            <div id="panel-vessel" class="panel" style="display:none;">
-                <button id="btn-back-signal" class="back-btn">← Back to Signal</button>
-                <h2 id="vessel-name">—</h2>
-                <div class="vessel-imo" id="vessel-imo">IMO: —</div>
+            <!-- Dossier view -->
+            <article id="view-dossier" hidden>
+                <button class="back" id="btn-back" type="button">Back to overview</button>
+                <h2 class="vessel-name" id="d-name"></h2>
+                <p class="vessel-now" id="d-now"></p>
 
-                <div class="risk-badge-large" id="vessel-risk-badge">
-                    <div class="risk-score-big" id="vessel-risk-score">—</div>
-                    <div class="risk-label">RISK SCORE</div>
-                </div>
-
-                <div class="vessel-detail-grid">
-                    <div class="detail-row">
-                        <span class="detail-label">Cargo Status</span>
-                        <span class="detail-value" id="vessel-cargo-status">—</span>
-                    </div>
-                    <div class="detail-row">
-                        <span class="detail-label">Confidence</span>
-                        <span class="detail-value" id="vessel-cargo-conf">—</span>
-                    </div>
-                    <div class="detail-row">
-                        <span class="detail-label">Draft</span>
-                        <span class="detail-value" id="vessel-draft">—</span>
-                    </div>
-                    <div class="detail-row">
-                        <span class="detail-label">Speed</span>
-                        <span class="detail-value" id="vessel-speed">—</span>
-                    </div>
-                    <div class="detail-row">
-                        <span class="detail-label">Identity Changes</span>
-                        <span class="detail-value" id="vessel-id-changes">—</span>
-                    </div>
-                    <div class="detail-row">
-                        <span class="detail-label">STS Encounters</span>
-                        <span class="detail-value" id="vessel-encounters">—</span>
+                <div class="score">
+                    <div class="score-number" id="d-score"></div>
+                    <div class="score-body">
+                        <div class="score-bar" id="d-bar"></div>
+                        <ul class="score-parts" id="d-parts"></ul>
                     </div>
                 </div>
 
-                <h3>💰 Economic Estimate</h3>
-                <div class="vessel-detail-grid">
-                    <div class="detail-row">
-                        <span class="detail-label">Est. Cargo Capacity</span>
-                        <span class="detail-value" id="vessel-barrels">—</span>
-                    </div>
-                    <div class="detail-row">
-                        <span class="detail-label">Est. Cargo Value</span>
-                        <span class="detail-value" id="vessel-cargo-val">—</span>
-                    </div>
-                    <div class="detail-row">
-                        <span class="detail-label">Est. Annual Flow</span>
-                        <span class="detail-value" id="vessel-annual">—</span>
-                    </div>
-                </div>
+                <section>
+                    <h3>Identities used</h3>
+                    <ol class="identities" id="d-identities"></ol>
+                </section>
 
-                <div class="risk-breakdown">
-                    <h3>📐 Risk Score Breakdown</h3>
-                    <div class="breakdown-bar">
-                        <div class="breakdown-segment sanctions" id="bar-sanctions" title="Sanctions Hit: +40"></div>
-                        <div class="breakdown-segment identity" id="bar-identity" title="Identity Changes"></div>
-                        <div class="breakdown-segment encounters" id="bar-encounters" title="Encounters"></div>
-                    </div>
-                    <div class="breakdown-legend">
-                        <span class="legend-item"><span class="legend-dot sanctions-dot"></span>Sanctions +40</span>
-                        <span class="legend-item"><span class="legend-dot identity-dot"></span>Identity ×10 (cap 30)</span>
-                        <span class="legend-item"><span class="legend-dot encounters-dot"></span>Encounters ×5 (cap 30)</span>
-                    </div>
-                </div>
-            </div>
+                <section>
+                    <h3>Recent activity</h3>
+                    <ul class="events" id="d-events"></ul>
+                </section>
 
-            <!-- Vessel List -->
-            <div id="panel-list" class="panel">
-                <h2>🚢 Vessel List</h2>
-                <input type="text" id="vessel-search" placeholder="Search by name or IMO..." />
-                <div id="vessel-list"></div>
-            </div>
+                <section>
+                    <h3>Size and value</h3>
+                    <p id="d-size"></p>
+                    <p class="footnote">Cargo state: <span id="d-cargo"></span></p>
+                </section>
+
+                <p class="sources" id="d-sources"></p>
+            </article>
+
+            <footer class="disclaimer">
+                <p>Estimates from public data. A listing or a score is not proof of wrongdoing, and nothing here is trading advice.</p>
+                <p>Sanctions: <a href="https://www.opensanctions.org/datasets/maritime/">OpenSanctions</a> (CC BY-NC 4.0). Vessel activity: <a href="https://globalfishingwatch.org/">Global Fishing Watch</a>. Basemap: Esri, GEBCO, NOAA.</p>
+            </footer>
         </aside>
-    </div>
+    </main>
 
-    <!-- Leaflet JS -->
-    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" integrity="sha384-cxOPjt7s7Iz04uaHJceBmS+qpjv2JkIHNVcuOrM+YHwZOmJGBXI00mdUXEq65HTH" crossorigin="anonymous"></script>
     <script src="app.js"></script>
 </body>
 </html>

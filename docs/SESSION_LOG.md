@@ -119,3 +119,26 @@ pipeline bugs, both fixed and covered by tests:
   3-month active-vessel trend: −13.1% (Jun–Aug vs Mar–May, hand-checked).
 - Validation: `python -m pytest -q` passed 8/8. Full live run, then an offline
   rebuild from cache.
+
+**Phase 2 (dashboard, done):** Rebuilt `dashboard/` on the real snapshot with a
+nautical-chart design (Esri Ocean basemap, chart magenta for risk 70+,
+Newsreader/Public Sans). The monitor view shows the trend headline, 12-month
+bars, key figures, busiest ports, and a searchable list (matching former names
+too). The dossier view shows the score breakdown, the AIS identity sequence,
+the last 12 dated events plotted on the map, and size and value ranges. It
+honestly marks cargo state as unknown. The page has a disclaimer and source
+credits, SRI on Leaflet, escaped data strings, and a `#imo=` deep link.
+Bugs found in browser testing and fixed:
+- Aggregates (trend, ports) were computed after trimming events to 60 per
+  vessel, which undercounted early months. They are now computed from all
+  events. The corrected headline is **−15.3%** (Jun–Aug 232 vs Mar–May 274,
+  hand-checked).
+- Missing CSV cells wrote `NaN`, which is invalid JSON and broke the page load.
+  They now become `null`, and the writer uses `allow_nan=False`.
+- Port names were dropped because the raw API key is `port_visit`, not the
+  client model's `portVisit` alias. All 1,335 displayed calls are now named.
+- Removed the straight lines between event points, which implied routes across
+  land. Fixed money formatting for single vessels.
+Validation: `python -m pytest -q` passed 9/9. Playwright at 1440×900 and
+390×844: no console errors, no horizontal scroll. Deep link, search (including
+a former name), empty state, open and back all work.
