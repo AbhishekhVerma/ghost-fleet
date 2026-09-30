@@ -22,7 +22,7 @@ submission due 2026-09-30.
     115 Russian-flagged.
   - `python scripts/figures.py` prints every quoted figure.
 - **Pipeline:** `dark_fleet_pipeline.py` (OpenSanctions + Global Fishing
-  Watch v3), 12 offline tests.
+  Watch v3), 16 offline tests.
 - **Dashboard:** a map landing page with a sidebar (trend, figures including
   "Cargo state known", ports, list with no-position tags) and per-vessel
   dossiers with OpenSanctions and Global Fishing Watch links.

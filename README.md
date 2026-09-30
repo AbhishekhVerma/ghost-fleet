@@ -7,7 +7,7 @@ A map-first monitor of the sanctioned shadow-fleet tankers, built for oil trader
 
 [![Live demo](https://img.shields.io/badge/live_demo-ghost--fleet.vercel.app-a3165f?style=flat-square)](https://ghost-fleet.vercel.app)
 ![Version](https://img.shields.io/badge/version-0.3.0-1c2a35?style=flat-square)
-![Tests](https://img.shields.io/badge/tests-12_passing-2e7d5b?style=flat-square)
+![Tests](https://img.shields.io/badge/tests-16_passing-2e7d5b?style=flat-square)
 ![Data](https://img.shields.io/badge/data-OpenSanctions_%2B_Global_Fishing_Watch-5d707a?style=flat-square)
 [![Licence: MIT](https://img.shields.io/badge/licence-MIT-1c2a35?style=flat-square)](LICENSE)
 
