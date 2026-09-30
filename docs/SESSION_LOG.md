@@ -223,3 +223,11 @@ $64–145 bn a year upper bound.
 
 **Remaining:** The owner records the demo video, adds team names on the
 deck, and submits.
+
+**Final review (fresh reviewer):** 0 critical, 1 important (Botswana missing
+from the dashboard's landlocked and flag-name lists). Two minors were
+re-graded to important: the pipeline's default of 120 vessels, and the
+mislabelled "full months" port-call figure. All three were fixed test-first
+(`tests/test_dashboard_consistency.py`, 4 new tests, suite 16/16),
+redeployed, and verified live: OSTRIA reads "Now flagged to Botswana, a
+landlocked country". Six minors were deferred (see the handover).

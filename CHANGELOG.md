@@ -26,6 +26,11 @@ versioning.
   (1.44 MB, down from 2.79 MB). Aggregates are computed before trimming.
 - Every figure in the write-up, demo script, pitch outline and deck was
   regenerated from the 300-vessel snapshot.
+- The dashboard names Botswana, Nicaragua and Syria, and marks Botswana as
+  landlocked, which matches the 11 quoted landlocked flags. The port-call
+  figure is labelled "in the window" because the last month is partial.
+- The pipeline defaults to `--max 300`, so a bare run can't shrink the live
+  snapshot.
 
 ## [0.2.0] - 2026-09-30
 

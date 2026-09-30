@@ -20,7 +20,7 @@ BEFORE RUNNING:
      (https://www.opensanctions.org/datasets/maritime/) and save it as maritime.csv
 
 Usage:
-  python dark_fleet_pipeline.py [--max 120] [--start 2025-10-01] [--end 2026-09-29]
+  python dark_fleet_pipeline.py [--max 300] [--start 2025-10-01] [--end 2026-09-29]
 
 Raw API responses are cached under .cache/gfw/ so reruns are fast and offline-safe.
 
@@ -57,7 +57,7 @@ DASHBOARD_DATA_DIR = Path("dashboard/data")
 # demo day. Used only for rough value ranges.
 BRENT_CRUDE_USD_PER_BARREL = 78.50
 
-MAX_VESSELS = 120
+MAX_VESSELS = 300  # matches the committed snapshot; a bare run must not shrink it
 # Events kept per vessel in the dashboard file. Aggregates use every event.
 EVENTS_PER_VESSEL = 30
 

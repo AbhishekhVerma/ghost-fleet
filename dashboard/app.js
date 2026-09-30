@@ -17,9 +17,9 @@ const FLAG_NAMES = {
     KNA: "St Kitts & Nevis", BHS: "Bahamas", PRT: "Portugal", VCT: "St Vincent", TZA: "Tanzania",
     HND: "Honduras", BLZ: "Belize", MNG: "Mongolia", CHN: "China", IND: "India", ARE: "UAE",
     IRN: "Iran", TUR: "Türkiye", VNM: "Vietnam", KHM: "Cambodia", MDV: "Maldives", STP: "São Tomé",
-    SWZ: "Eswatini", BOL: "Bolivia", BEN: "Benin", DJI: "Djibouti", VUT: "Vanuatu", TUV: "Tuvalu",
+    SWZ: "Eswatini", BOL: "Bolivia", BWA: "Botswana", NIC: "Nicaragua", SYR: "Syria", BEN: "Benin", DJI: "Djibouti", VUT: "Vanuatu", TUV: "Tuvalu",
 };
-const LANDLOCKED = new Set(["MLI", "MWI", "ZWE", "MNG", "SWZ", "BOL"]);
+const LANDLOCKED = new Set(["MLI", "MWI", "ZWE", "BWA", "MNG", "SWZ", "BOL"]);
 
 const SCORE_PARTS = [
     { key: "sanctions", label: "Sanctions or shadow-fleet listing", color: "#a3165f" },
