@@ -1,6 +1,10 @@
 # Demo script and video shot list (3 minutes)
 
-Use the same script for the live pitch demo and the recorded video.
+**The recorded video is ready:** https://ghost-fleet.vercel.app/watch.html
+(3 min 9 s, 1080p, subtitles, chapters). Its narration is in
+`video/narration.json`, which follows this script's flow.
+
+Use the script below to present live, or to re-record by hand.
 
 **Before you start**
 - Open https://ghost-fleet.vercel.app in a clean browser window at about

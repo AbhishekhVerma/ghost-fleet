@@ -33,3 +33,6 @@ sanctioned_oil_flow_signal.json
 # Vercel local link
 .vercel/
 .env.local
+
+# Demo video build intermediates (audio, frames, scene clips)
+video/build/

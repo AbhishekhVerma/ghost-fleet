@@ -3,6 +3,31 @@
 All notable changes to Ghost Fleet are recorded here. Versions follow semantic
 versioning.
 
+## [0.4.0] - 2026-09-30
+
+### Added
+
+- A narrated 3-minute pitch and demo video (1080p30, 3 min 9 s, 44 MB). It is
+  served by the live site at `/watch.html`, with English subtitles, 11
+  clickable chapters and a download link.
+- A reproducible video pipeline in `video/`:
+  - `make_voice.py`: ElevenLabs narration, one clip per scene, with character
+    timestamps, cached by content.
+  - `record_scenes.py`: frame-accurate 1080p capture of the live site and
+    animated title cards. Actions are synced to the spoken words. Captures run
+    in slow motion for smooth motion.
+  - `assemble.py`: crossfades, fades, loudness normalisation to −16 LUFS,
+    SRT/VTT subtitles, chapters and the poster.
+- A README section with a clickable video poster; video links in the
+  write-up, demo script and pitch outline.
+- Media tests: the watch page's files exist, subtitles agree, chapters are
+  ordered, and the video stays under GitHub's 50 MB warning size.
+
+### Changed
+
+- The README GIF, both screenshots and the deck's product slide were
+  re-captured to show the "Port calls in the window" label.
+
 ## [0.3.0] - 2026-09-30
 
 ### Added

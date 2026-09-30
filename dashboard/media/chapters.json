@@ -1,0 +1,57 @@
+[
+ {
+  "id": "title",
+  "title": "Ghost Fleet",
+  "start": 0.0
+ },
+ {
+  "id": "problem",
+  "title": "The shadow fleet",
+  "start": 6.72
+ },
+ {
+  "id": "landing",
+  "title": "The map",
+  "start": 31.4
+ },
+ {
+  "id": "trend",
+  "title": "The trend",
+  "start": 51.36
+ },
+ {
+  "id": "ports",
+  "title": "Where they call",
+  "start": 66.12
+ },
+ {
+  "id": "search",
+  "title": "Search a former name",
+  "start": 83.36
+ },
+ {
+  "id": "identities",
+  "title": "One hull, seven identities",
+  "start": 93.96
+ },
+ {
+  "id": "score",
+  "title": "An explained score",
+  "start": 117.68
+ },
+ {
+  "id": "honesty",
+  "title": "What we don't claim",
+  "start": 139.64
+ },
+ {
+  "id": "fleet",
+  "title": "The whole fleet",
+  "start": 157.6
+ },
+ {
+  "id": "close",
+  "title": "What's next",
+  "start": 171.96
+ }
+]

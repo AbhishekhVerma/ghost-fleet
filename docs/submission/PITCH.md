@@ -1,8 +1,8 @@
 # Pitch deck
 
-**Deck:** https://claude.ai/artifact/9SscVdcfFiNjFdTEaZLmeL. It is private until
-shared from its Share menu, and exports to PowerPoint or PDF from Share ›
-Export.
+**Deck:** https://claude.ai/artifact/9SscVdcfFiNjFdTEaZLmeL. It is shared by link,
+and exports to PowerPoint or PDF from Share › Export.
+**Narrated pitch video:** https://ghost-fleet.vercel.app/watch.html
 
 Ten slides, about 3–4 minutes. Speaker notes are in each slide. The live demo
 follows `DEMO_SCRIPT.md` and replaces slides 5–6 when presenting in person.

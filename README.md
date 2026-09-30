@@ -6,14 +6,14 @@
 A map-first monitor of the sanctioned shadow-fleet tankers, built for oil traders from public data.
 
 [![Live demo](https://img.shields.io/badge/live_demo-ghost--fleet.vercel.app-a3165f?style=flat-square)](https://ghost-fleet.vercel.app)
-![Version](https://img.shields.io/badge/version-0.3.0-1c2a35?style=flat-square)
-![Tests](https://img.shields.io/badge/tests-16_passing-2e7d5b?style=flat-square)
+![Version](https://img.shields.io/badge/version-0.4.0-1c2a35?style=flat-square)
+![Tests](https://img.shields.io/badge/tests-20_passing-2e7d5b?style=flat-square)
 ![Data](https://img.shields.io/badge/data-OpenSanctions_%2B_Global_Fishing_Watch-5d707a?style=flat-square)
 [![Licence: MIT](https://img.shields.io/badge/licence-MIT-1c2a35?style=flat-square)](LICENSE)
 
 <img src="docs/demo.gif" alt="Demo: landing on the map of 276 shadow-fleet tankers, searching the former name Longevity 7, and opening WOLF's dossier with seven identities" width="900">
 
-**[Try it live](https://ghost-fleet.vercel.app)** · **[Open WOLF's dossier](https://ghost-fleet.vercel.app/#imo=9240885)**
+**[Try it live](https://ghost-fleet.vercel.app)** · **[Watch the 3-minute pitch](https://ghost-fleet.vercel.app/watch.html)** · **[Open WOLF's dossier](https://ghost-fleet.vercel.app/#imo=9240885)**
 
 </div>
 
@@ -25,6 +25,17 @@ Since 2022, a shadow fleet of ageing tankers has kept sanctioned Russian oil
 moving by changing names, flags and radio identities. Ghost Fleet answers the
 oil trader's question: **is that hidden supply rising or falling, and where is
 it moving?**
+
+## Watch the 3-minute pitch
+
+<a href="https://ghost-fleet.vercel.app/watch.html"><img src="dashboard/media/poster.jpg" alt="Play the Ghost Fleet pitch video: WOLF's seven identities on the map" width="720"></a>
+
+A narrated walkthrough of the live product: the trend, the routes, one ship's
+seven identities and what the data can't tell us. It runs 3 min 9 s at 1080p,
+with English subtitles and 11 chapters. The narration is voiced with
+ElevenLabs, and every on-screen number comes from the same snapshot. You can
+also [download the MP4](https://ghost-fleet.vercel.app/media/ghost-fleet-demo.mp4)
+or read the [subtitles](dashboard/media/ghost-fleet-demo.srt).
 
 ## What the snapshot shows
 
@@ -71,6 +82,8 @@ switches and 5 for loitering at sea. This summer it idled offshore for up to
   it is called today.
 - **Honest unknowns.** No draft data means cargo state is "unknown", not a
   guess. Values are ranges with their assumptions shown.
+- **Narrated pitch video.** A reproducible 1080p walkthrough with subtitles
+  and chapters, built from the live site by code in `video/`.
 
 <p align="center">
   <img src="docs/screenshot-overview.png" alt="Overview: map, trend headline and figures" width="49%">
@@ -130,6 +143,11 @@ python scripts/figures.py                              # every figure quoted in 
 cd dashboard; python -m http.server 8765               # http://localhost:8765
 vercel deploy --prod --cwd dashboard                   # deploy (static, no build)
 python scripts/record_demo.py                          # re-record docs/demo.gif
+
+# The pitch video (needs ELEVENLABS_API_KEY, Playwright, ffmpeg)
+python video/make_voice.py      # narration per scene; cached, only changed scenes cost characters
+python video/record_scenes.py   # 1080p scene capture of the live site, synced to the narration
+python video/assemble.py        # crossfades + audio + subtitles -> dashboard/media/
 ```
 
 The pipeline writes `dashboard/data/vessels.json` and `signal.json`. These

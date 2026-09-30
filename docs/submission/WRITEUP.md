@@ -3,6 +3,7 @@
 **Live demo:** https://ghost-fleet.vercel.app
 **Repository:** https://github.com/aaaditt/ghost-fleet
 **Start here:** https://ghost-fleet.vercel.app/#imo=9240885
+**Pitch video (3 min):** https://ghost-fleet.vercel.app/watch.html
 
 > A ship can turn off its beacon, but it cannot stop leaving a trail.
 

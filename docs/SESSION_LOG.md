@@ -231,3 +231,48 @@ mislabelled "full months" port-call figure. All three were fixed test-first
 (`tests/test_dashboard_consistency.py`, 4 new tests, suite 16/16),
 redeployed, and verified live: OSTRIA reads "Now flagged to Botswana, a
 landlocked country". Six minors were deferred (see the handover).
+
+## 2026-09-30 — Narrated pitch video (v0.4.0)
+
+**Objective:** Record a smooth, unhurried, professionally voiced pitch and demo
+video, and publish it with the repo and docs updated.
+
+**Decisions:**
+- One combined 3-minute pitch and demo video. Voice: ElevenLabs "Eric"
+  (American, "smooth, trustworthy") on `eleven_v4`, at speed 0.95.
+- One clip per scene. Each scene's length is the lead-in + its narration +
+  a tail, and on-screen actions are triggered by the narration's character
+  timestamps.
+- Built with HTML/CSS animation plus an ffmpeg crossfade assembly instead of
+  Remotion (fewer dependencies, same visual result).
+- The video is hosted on the live site (`/watch.html`) because GitHub serves
+  raw MP4s as downloads.
+
+**Problems found and fixed:**
+- Chrome's screencast gives only ~15 fps at 1080p. Pages now run at 1/3
+  speed (JS clocks, timers, animation frames, CSS via CDP), are captured in
+  real time, and are re-timed: ~45–50 fps of video time.
+- The slow-time patch was applied twice per window, which made timers 9×
+  slower and stalled the first full run at the ports scene. Fixed with a
+  once-per-window guard and animation timestamps from the slowed clock,
+  confirmed by measurement.
+- The sidebar scroll helper returned a promise, so each scroll waited for
+  itself before the planned pause, and later beats drifted past the cut.
+  Scrolls are now fire-and-forget; the affected scenes were re-recorded and
+  the beats checked on frames.
+
+**Validation:**
+- Narration: 11 clips, 168.9 s; levels consistent (mean about −24 dB, no
+  clipping).
+- Final mix: −16.6 LUFS integrated, −1.5 dBFS peak. Video: 1920×1080,
+  30 fps, H.264 + AAC, 188.7 s, 44.0 MB.
+- Frames checked at every scene and at specific cues (Magenta, Nakhodka,
+  East One, thirty for, every vessel links).
+- The live watch page plays: seeking to the "One hull, seven identities"
+  chapter lands at 1:33, and the active subtitle matches the narration.
+  0 console errors.
+- Media served with correct types and range support. `.env.local` → 404.
+- `python -m pytest -q` → 20 passed.
+
+**Remaining:** The owner adds team names to the deck, rotates the ElevenLabs
+key, and submits.
