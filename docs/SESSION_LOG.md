@@ -170,3 +170,56 @@ Checked the script's claims against the data. Corrected one caption from
 
 **Remaining:** The owner records the demo video, fills in team names on the
 deck, shares or exports the deck, and submits.
+
+## 2026-09-30 — 300-vessel snapshot, plan-gap fixes, licence, showcase README (v0.3.0)
+
+**Objective:** Expand the snapshot to 300 vessels and redeploy. Check the
+dashboard against the approved plan and fix the gaps. Add an open-source
+licence. Make the README a showcase.
+
+**Process:** Brainstorming → spec
+(`docs/superpowers/specs/2026-09-30-snapshot-300-readme-design.md`) → plan
+(`docs/superpowers/plans/2026-09-30-snapshot-300-readme.md`) → inline
+execution, with the owner approving each stage.
+
+**Decisions:**
+- MIT licence (owner: MIT or Apache fine).
+- 300 most-listed shadow-fleet vessels, same window.
+- 30 events per vessel, plus compact JSON (the trim alone left 2.10 MB).
+- GIF by live recording (approach A). The planned quality tiers exceeded
+  8 MB on the photographic basemap, so lower tiers were added. Final: 10 fps,
+  800px, 128 colours.
+- Worked on `main`, per AGENTS.md.
+
+**Plan cross-check:** The map-first layout with a sidebar matched the plan.
+Three Phase 2 items had been missed and are now built: the no-position tag,
+the loaded/ballast/unknown figure (as "Cargo state known 0 of 300"), and the
+GFW vessel link. The URL format was verified in a browser.
+
+**Figures (from `scripts/figures.py`):** 300 screened / 300 matched / 276
+located / 234 scored 70+. Trend −10.1% (595 vs 662, hand-checked). 289
+switched identity (124 five or more times). 81 flags. 11 landlocked flags
+(Malawi 4, Mali 3, Zimbabwe 3, Botswana 1). 115 Russian-flagged. Value
+$64–145 bn a year upper bound.
+
+**Changed:** `dark_fleet_pipeline.py`, `tests/test_snapshot.py`,
+`dashboard/{index.html,app.js,style.css,data/*}`, `scripts/figures.py`,
+`scripts/record_demo.py`, `docs/demo.gif`, `docs/screenshot-*.png`,
+`docs/submission/*`, `LICENSE`, `README.md`, `CHANGELOG.md`, `VERSION`,
+`docs/HANDOVER.md`. Deck slides answer, product and fleet were republished.
+
+**Validation:**
+- `python -m pytest -q` → 12 passed.
+- Live anonymous HTTP checks: `/` and `/data/signal.json` 200;
+  `.env.local` and `vessels.demo.json` 404; the live signal shows 300 and
+  −10.1.
+- Playwright on the live site: headline "fell 10%", "0 of 300", "276 of
+  300", 7 identities and a GFW link for 9240885, 0 console errors, no
+  horizontal scroll at 390px.
+- Local browser: 24/24 no-position vessels tagged; a no-position dossier
+  opens.
+- GIF: 6.9 MB and 14.7 s, with frames inspected.
+- The README's local links all resolve, and the stale-figure grep is clean.
+
+**Remaining:** The owner records the demo video, adds team names on the
+deck, and submits.

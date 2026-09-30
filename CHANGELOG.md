@@ -3,6 +3,30 @@
 All notable changes to Ghost Fleet are recorded here. Versions follow semantic
 versioning.
 
+## [0.3.0] - 2026-09-30
+
+### Added
+
+- MIT licence for the code. Data stays under OpenSanctions CC BY-NC 4.0 and
+  Global Fishing Watch non-commercial terms.
+- A 300-vessel snapshot: 276 located, trend −10% (Jun–Aug vs Mar–May).
+- Dashboard: a "Cargo state known" figure (0 of 300 without draft data), a
+  "No recent position" tag in the list, and a "View on Global Fishing Watch"
+  link in each dossier.
+- `scripts/figures.py`, the single source for every figure quoted in the docs
+  and deck.
+- `scripts/record_demo.py` and `docs/demo.gif`, a recording of the live site.
+- A showcase README with badges, the demo GIF, a figures table, the
+  EAST 1 → WOLF story, a Mermaid diagram and a limits table.
+- Snapshot tests: valid JSON, consistent counts, trim, file size.
+
+### Changed
+
+- 30 events are kept per vessel, and `vessels.json` is written compact
+  (1.44 MB, down from 2.79 MB). Aggregates are computed before trimming.
+- Every figure in the write-up, demo script, pitch outline and deck was
+  regenerated from the 300-vessel snapshot.
+
 ## [0.2.0] - 2026-09-30
 
 ### Added
