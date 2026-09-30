@@ -7,6 +7,11 @@ and estimating the operational and economic significance.
 The current project version is **0.1.2**. The shared repository is
 [`aaaditt/ghost-fleet`](https://github.com/aaaditt/ghost-fleet).
 
+**Live demo: https://ghost-fleet.vercel.app** · start with the vessel
+[EAST 1 / WOLF](https://ghost-fleet.vercel.app/#imo=9240885)
+
+![Ghost Fleet overview: map of 112 shadow-fleet tankers with the monthly activity trend](docs/screenshot-overview.png)
+
 ## Start here
 
 - [Product brief](docs/PRODUCT_BRIEF.md): the approved direction. A map-first
@@ -73,6 +78,10 @@ as an offline fallback.
 cd dashboard
 python -m http.server 8765      # then open http://localhost:8765
 ```
+
+It is deployed as a static site on Vercel from the `dashboard/` folder
+(`vercel deploy --prod --cwd dashboard`). `dashboard/.vercelignore` keeps local
+env files and the fictional demo data out of the upload.
 
 The page opens on the trader view: the headline trend, the monthly bars,
 figures, the busiest ports, and a searchable vessel list. Selecting a vessel

@@ -29,3 +29,7 @@ sanctioned_oil_flow_signal.json
 
 # Browser test artefacts
 .playwright-mcp/
+
+# Vercel local link
+.vercel/
+.env.local

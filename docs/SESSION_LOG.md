@@ -142,3 +142,15 @@ Bugs found in browser testing and fixed:
 Validation: `python -m pytest -q` passed 9/9. Playwright at 1440×900 and
 390×844: no console errors, no horizontal scroll. Deep link, search (including
 a former name), empty state, open and back all work.
+
+**Phase 3 (deploy, done):** At the owner's request, deployed `dashboard/` to
+Vercel as project `ghost-fleet` (static, no build) at
+https://ghost-fleet.vercel.app. `vercel link` wrote `dashboard/.env.local`
+(an OIDC token). It is git-ignored, and a new `dashboard/.vercelignore` keeps it
+and the fictional `vessels.demo.json` out of the upload.
+Validation: anonymous HTTP checks returned 200 for `/` and `/data/signal.json`,
+and 404 for `/.env.local` and `/data/vessels.demo.json`. Per-deployment URLs
+redirect to Vercel login (deployment protection); the production alias is
+public. Playwright on the live site: the deep link `#imo=9240885` renders all
+7 identities, 138 markers and loaded tiles, with 0 console errors. Screenshots
+are saved to `docs/screenshot-*.png`.

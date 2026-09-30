@@ -1,0 +1,4 @@
+.env*
+.vercel
+.gitignore
+data/vessels.demo.json

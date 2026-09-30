@@ -18,7 +18,7 @@ The work follows the plan phases:
 | 0 | Record decisions, lift guardrail, mark old docs historical | Done |
 | 1 | Real data: GFW + OpenSanctions pipeline, positions, monthly trend | Done (120 vessels, snapshot 2026-09-30) |
 | 2 | Trader-focused dashboard polish | Done |
-| 3 | Deploy live link | Not started |
+| 3 | Deploy live link | Done: https://ghost-fleet.vercel.app |
 | 4 | Write-up, demo script, pitch deck, video shot list | Not started |
 | 5 | Version 0.2.0, changelog, log, handover | Not started |
 
@@ -29,8 +29,7 @@ demo vessel is `#imo=9240885` (EAST 1 → WOLF, 7 identities).
 
 ## Immediate next work
 
-1. Phase 3: deploy `dashboard/` and fix the signal URL.
-2. Phase 4: write-up, demo script, pitch deck, video shot list.
+1. Phase 4: write-up, demo script, pitch deck, video shot list.
 
 ## Setup
 
